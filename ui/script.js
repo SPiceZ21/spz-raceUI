@@ -14,8 +14,17 @@ const currentLapDisplay = document.getElementById('current-lap-time');
 const bestLapDisplay = document.getElementById('best-lap-time');
 
 let lapStartTime = 0;
+let raceStartTime = 0;
 let isLapTimerRunning = false;
+let isRaceTimerRunning = false;
 let rafId = null;
+
+let totals = {
+    racers: 0,
+    laps: 0,
+    checkpoints: 0,
+    currentLap: 1
+};
 
 window.addEventListener('message', (event) => {
     const data = event.data;
@@ -30,7 +39,7 @@ window.addEventListener('message', (event) => {
         case 'hideAll':
             countdownApp.style.display = 'none';
             raceOverlayApp.style.display = 'none';
-            stopLapTimer();
+            stopTimers();
             break;
     }
 });
@@ -48,6 +57,9 @@ function handleCountdown(data) {
         countdownDisplay.innerText = 'RACE';
         countdownTrackInfo.style.display = 'none';
         
+        // Start timers
+        startTimers();
+
         // Hide countdown after 2 seconds of GO
         setTimeout(() => {
             countdownApp.style.display = 'none';
@@ -57,6 +69,10 @@ function handleCountdown(data) {
         countdownDisplay.innerText = data.number;
         countdownTrackInfo.style.display = 'flex';
         
+        // Store totals
+        if (data.total) totals.racers = data.total;
+        if (data.laps) totals.laps = data.laps;
+
         document.getElementById('mono-track-name').innerText = data.track || 'AIRSTRIP ASSAULT';
         document.getElementById('mono-class-laps').innerHTML = `CLASS ${data.class || 'B'} &bull; ${data.laps || 3} LAPS`;
         document.getElementById('mono-grid').innerText = `GRID P${data.gridPos || 1}/${data.total || 8}`;
@@ -72,15 +88,20 @@ function handleRaceOverlay(data) {
 
     raceOverlayApp.style.display = 'block';
 
+    // Store new totals if provided
+    if (data.totalRacers) totals.racers = data.totalRacers;
+    if (data.totalLaps) totals.laps = data.totalLaps;
+    if (data.totalCheckpoints) totals.checkpoints = data.totalCheckpoints;
+
     // Metrics
     posVal.innerText = data.position || 1;
-    posTotal.innerText = ` / ${data.totalRacers || '–'}`;
+    posTotal.innerText = ` / ${totals.racers || '–'}`;
     lapVal.innerText = data.lapNum || 1;
-    lapTotal.innerText = `/${data.totalLaps || '–'}`;
+    lapTotal.innerText = `/${totals.laps || '–'}`;
     cpVal.innerText = data.checkpoint || 1;
-    cpTotal.innerText = `/${data.totalCheckpoints || '–'}`;
+    cpTotal.innerText = `/${totals.checkpoints || '–'}`;
 
-    if (data.bestLapTime) {
+    if (data.bestLapTime && data.bestLapTime > 0) {
         bestLapDisplay.style.display = 'block';
         bestLapDisplay.innerText = `BEST: ${formatMs(data.bestLapTime)}`;
     } else {
@@ -93,9 +114,11 @@ function handleRaceOverlay(data) {
     // Lap Timer logic
     // If lapNum changed, reset timer
     if (data.resetTimer || data.isFirstLap) {
-        startLapTimer();
-    } else if (!isLapTimerRunning) {
-        startLapTimer();
+        lapStartTime = Date.now();
+        if (!isLapTimerRunning) startTimers();
+    } else if (data.lapNum && data.lapNum !== totals.currentLap) {
+        lapStartTime = Date.now();
+        totals.currentLap = data.lapNum;
     }
 }
 
@@ -141,26 +164,40 @@ function createStandingRow(racer, isMe) {
     return row;
 }
 
-function startLapTimer() {
-    lapStartTime = Date.now();
-    if (!isLapTimerRunning) {
-        isLapTimerRunning = true;
-        requestAnimationFrame(updateTimer);
-    }
+const wholeRaceDisplay = document.getElementById('whole-race-time');
+
+function startTimers() {
+    const now = Date.now();
+    lapStartTime = now;
+    raceStartTime = now;
+    isLapTimerRunning = true;
+    isRaceTimerRunning = true;
+    if (rafId) cancelAnimationFrame(rafId);
+    requestAnimationFrame(updateTimers);
 }
 
-function stopLapTimer() {
+function stopTimers() {
     isLapTimerRunning = false;
+    isRaceTimerRunning = false;
     if (rafId) cancelAnimationFrame(rafId);
 }
 
-function updateTimer() {
-    if (!isLapTimerRunning) return;
+function updateTimers() {
+    if (!isLapTimerRunning && !isRaceTimerRunning) return;
 
-    const diff = Date.now() - lapStartTime;
-    currentLapDisplay.innerText = formatMs(diff);
+    const now = Date.now();
+
+    if (isLapTimerRunning) {
+        const lapDiff = now - lapStartTime;
+        currentLapDisplay.innerText = formatMs(lapDiff);
+    }
+
+    if (isRaceTimerRunning) {
+        const raceDiff = now - raceStartTime;
+        wholeRaceDisplay.innerText = formatMs(raceDiff);
+    }
     
-    rafId = requestAnimationFrame(updateTimer);
+    rafId = requestAnimationFrame(updateTimers);
 }
 
 function formatMs(ms) {
