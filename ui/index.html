@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPiceZ Race UI</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- COUNTDOWN -->
+    <div id="countdown-app">
+        <div class="monolithic-center-zone">
+            <div id="countdown-display"></div>
+        </div>
+        <div id="countdown-track-info" class="monolithic-track-info">
+            <span id="mono-track-name" class="mono-track-name"></span>
+            <span class="mono-divider">|</span>
+            <span id="mono-class-laps" class="mono-class-laps"></span>
+            <span class="mono-divider">|</span>
+            <span id="mono-grid" class="mono-grid"></span>
+        </div>
+    </div>
+
+    <!-- RACE OVERLAY -->
+    <div id="race-overlay-app">
+        <!-- TOP LEFT: STANDINGS -->
+        <div class="race-overlay-left">
+            <div id="standings-list" class="standings-minimal"></div>
+        </div>
+
+        <!-- TOP RIGHT: METRICS -->
+        <div class="race-overlay-right">
+            <div class="minimal-module">
+                <span class="minimal-header">Position</span>
+                <div class="minimal-value">
+                    <span style="font-size: 24px; margin-right: 4px; opacity: 0.8;">P</span>
+                    <span id="pos-val">1</span>
+                    <span id="pos-total" class="minimal-subvalue" style="font-size: 14px;"> / –</span>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 24px; justify-content: flex-end;">
+                <div class="minimal-module">
+                    <span class="minimal-header">Lap</span>
+                    <div class="minimal-value">
+                        <span id="lap-val">1</span>
+                        <span id="lap-total" class="minimal-subvalue" style="font-size: 13px;">/–</span>
+                    </div>
+                </div>
+                <div class="minimal-module">
+                    <span class="minimal-header">Checkpoint</span>
+                    <div class="minimal-value">
+                        <span id="cp-val">1</span>
+                        <span id="cp-total" class="minimal-subvalue" style="font-size: 13px;">/–</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="minimal-module" style="margin-top: 4px;">
+                <span class="minimal-header">Current Lap</span>
+                <div id="current-lap-time" class="timer-minimal-large">00:00.00</div>
+                <div id="best-lap-time" class="timer-best-minimal" style="display: none;">
+                    BEST: 00:00.00
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
