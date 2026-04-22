@@ -126,11 +126,16 @@ function createStandingRow(racer, isMe) {
     row.className = `standing-row${isMe ? ' my-pos' : ''}`;
 
     row.innerHTML = `
-        <span class="standing-num">${racer.position}</span>
-        <span class="standing-name-main">
-            ${racer.name}
-            ${racer.crew_tag ? `<span style="opacity: 0.4; font-size: 10px; margin-left: 6px;">[${racer.crew_tag}]</span>` : ''}
-        </span>
+        <img class="standing-banner" src="${racer.banner || ''}" style="${racer.banner ? '' : 'display:none'}">
+        <div class="standing-num">${racer.position}</div>
+        <img class="standing-avatar" src="${racer.avatar || 'https://i.imgur.com/8NzA8m8.png'}">
+        <div class="standing-info">
+            <div class="standing-top">
+                <span class="standing-name">${racer.name}</span>
+                ${racer.crew ? `<span class="standing-crew">${racer.crew}</span>` : ''}
+            </div>
+            <div class="standing-license license-${racer.licenseClass || 'D'}">${racer.licenseClass || 'D'} CLASS &bull; ${racer.license || 'D-5'}</div>
+        </div>
         <span class="standing-delta">${racer.gap || ''}</span>
     `;
     return row;

@@ -12,6 +12,17 @@ end
 local function UpdateRaceOverlay(data)
     if not isRaceOverlayVisible then return end
     
+    if data.positions then
+        for i, racer in ipairs(data.positions) do
+            local p = Player(racer.source).state
+            racer.avatar = p['spz:avatar'] or "https://i.imgur.com/8NzA8m8.png"
+            racer.banner = p['spz:banner'] or ""
+            racer.license = p['spz:license'] or "D-5"
+            racer.licenseClass = p['spz:licenseClass'] or "D"
+            racer.crew = p['spz:crew'] or ""
+        end
+    end
+
     SendNUIMessage({
         action = 'raceOverlay',
         data = data
