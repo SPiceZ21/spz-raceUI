@@ -356,3 +356,251 @@ body {
     font-family: var(--font-mono);
     letter-spacing: 1px;
 }
+
+/* ──────────────── POST RACE STATS ──────────────── */
+
+#post-race-stats-app {
+    display: none; /* Controlled by JS */
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 800px;
+    height: 95px;
+    background: rgba(12, 12, 12, 0.98);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    z-index: 2500;
+    font-family: var(--font-main);
+    color: var(--white);
+    overflow: hidden;
+    justify-content: center;
+}
+
+#post-race-stats-app.visible {
+    display: flex;
+    animation: stats-slide-down 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes stats-slide-down {
+    from { transform: translate(-50%, -120px); opacity: 0; }
+    to { transform: translate(-50%, 0); opacity: 1; }
+}
+
+.stats-massive-bg-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 160px; 
+    font-weight: 950;
+    color: rgba(255, 255, 255, 0.1); 
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: -5px;
+    pointer-events: none;
+    z-index: 1;
+    font-family: var(--font-speed);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 0.75;
+}
+
+.stats-slim-container {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.stats-slim-header {
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.slim-header-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 400;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    opacity: 0.9;
+}
+
+.stats-slim-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 10%;
+}
+
+.slim-content-inner {
+    width: 100%;
+}
+
+.slim-content-inner.fade-in {
+    animation: stats-content-fade 0.3s ease-out;
+}
+
+@keyframes stats-content-fade {
+    from { transform: translateY(15px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* RESULT */
+.slim-result {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.slim-side { flex: 1; }
+.slim-side.right { text-align: right; }
+
+.slim-center {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    flex: 1;
+}
+
+.p-brand {
+    font-size: 52px;
+    font-weight: 900;
+    color: var(--primary-orange);
+    margin-right: 5px;
+}
+
+.p-number {
+    font-size: 52px;
+    font-weight: 900;
+    color: var(--primary-orange);
+    line-height: 0.7;
+}
+
+.slim-label {
+    font-size: 10px;
+    font-weight: 400;
+    color: var(--primary-orange);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.slim-value {
+    font-size: 20px;
+    font-weight: 400;
+}
+
+/* PROGRESS */
+.slim-progress {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    padding: 0 50px;
+}
+
+.slim-prog-val {
+    font-size: 42px;
+    font-weight: 900;
+    color: var(--primary-orange);
+    letter-spacing: -2px;
+}
+
+.slim-bar-container {
+    flex: 1;
+    height: 32px;
+    background: rgba(255, 255, 255, 0.05);
+    position: relative;
+    overflow: hidden;
+}
+
+.slim-bar-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    background: var(--primary-orange);
+    z-index: 1;
+    transition: width 1.5s ease-out;
+}
+
+.slim-bar-fill::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    background: var(--white);
+}
+
+.slim-bar-segments {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    justify-content: space-between;
+}
+
+.slim-seg {
+    width: 1px;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+}
+
+/* DIFF */
+.slim-diff {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 40px;
+}
+
+.slim-diff-val {
+    font-size: 32px;
+    font-weight: 900;
+}
+
+.slim-diff-line {
+    flex: 1;
+    max-width: 500px;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.2);
+    position: relative;
+}
+
+.slim-diff-base {
+    position: absolute;
+    top: -6px;
+    bottom: -6px;
+    left: 50%;
+    width: 1px;
+    background: var(--primary-orange);
+}
+
+.slim-diff-dot {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px;
+    height: 8px;
+    background: var(--primary-orange);
+    box-shadow: 0 0 10px var(--primary-orange);
+    border-radius: 50%;
+    transition: left 1s ease-out;
+}
+
+/* SR */
+.slim-sr {
+    text-align: center;
+}
+
+.slim-sr-val {
+    font-size: 48px;
+    font-weight: 900;
+}

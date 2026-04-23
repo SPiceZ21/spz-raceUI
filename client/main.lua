@@ -48,11 +48,20 @@ local function HideAll()
     SendNUIMessage({ action = 'hideAll' })
 end
 
+---@param data table { trackName: string, finishTime: string, position: number, bestLap: string, xpGained: number, xpNewProgress: number, classPointsGained: number, cpNewProgress: number, iRatingDelta: number, safetyRatingDelta: number }
+local function ShowPostRaceStats(data)
+    SendNUIMessage({
+        action = 'postRaceStats',
+        data = data
+    })
+end
+
 -- Exports
 exports('ShowCountdown', ShowCountdown)
 exports('UpdateRaceOverlay', UpdateRaceOverlay)
 exports('SetRaceOverlayVisible', SetRaceOverlayVisible)
 exports('HideAll', HideAll)
+exports('ShowPostRaceStats', ShowPostRaceStats)
 
 -- Test Commands
 RegisterCommand('testcountdown', function(source, args)
@@ -100,4 +109,19 @@ end, false)
 
 RegisterCommand('hideui', function()
     HideAll()
+end, false)
+
+RegisterCommand('teststats', function()
+    ShowPostRaceStats({
+        trackName = "VINEWOOD CIRCUIT",
+        finishTime = "05:42.12",
+        position = 1,
+        bestLap = "01:22.45",
+        xpGained = 1250,
+        xpNewProgress = 0.85,
+        classPointsGained = 45,
+        cpNewProgress = 0.65,
+        iRatingDelta = 12,
+        safetyRatingDelta = 4
+    })
 end, false)

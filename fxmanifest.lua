@@ -22,5 +22,6 @@ exports {
     'ShowCountdown',
     'UpdateRaceOverlay',
     'SetRaceOverlayVisible',
-    'HideAll'
+    'HideAll',
+    'ShowPostRaceStats'
 }
