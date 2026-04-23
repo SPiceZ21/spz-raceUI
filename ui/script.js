@@ -119,8 +119,9 @@ function handleRaceOverlay(data) {
 
     // Lap Timer logic
     // If lapNum changed, reset timer
-    if (data.resetTimer || data.isFirstLap) {
+    if (data.resetTimer) {
         lapStartTime = Date.now();
+        raceStartTime = Date.now();
         if (!isLapTimerRunning) startTimers();
     } else if (data.lapNum && data.lapNum !== totals.currentLap) {
         lapStartTime = Date.now();
@@ -155,6 +156,7 @@ function createStandingRow(racer, isMe) {
     row.className = `standing-row${isMe ? ' my-pos' : ''}`;
 
     row.innerHTML = `
+        <div class="bg-num">${racer.position}</div>
         <img class="standing-banner" src="${racer.banner || ''}" style="${racer.banner ? '' : 'display:none'}">
         <div class="standing-num">${racer.position}</div>
         <img class="standing-avatar" src="${racer.avatar || 'https://i.imgur.com/8NzA8m8.png'}">

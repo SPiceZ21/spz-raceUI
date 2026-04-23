@@ -15,6 +15,7 @@ local function UpdateRaceOverlay(data)
     if data.positions then
         for i, racer in ipairs(data.positions) do
             local p = Player(racer.source).state
+            racer.name = racer.name or p['spz:nametag'] or GetPlayerName(GetPlayerFromServerId(racer.source)) or "Racer"
             racer.avatar = p['spz:avatar'] or "https://i.imgur.com/8NzA8m8.png"
             racer.banner = p['spz:banner'] or ""
             racer.license = p['spz:license'] or "D-5"
