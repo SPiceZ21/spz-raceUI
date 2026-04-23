@@ -331,7 +331,7 @@ body {
 }
 
 .timer-best-minimal {
-    font-size: 12px;
+    font-size: 16px;
     font-weight: 800;
     color: var(--primary-orange);
     letter-spacing: 1px;

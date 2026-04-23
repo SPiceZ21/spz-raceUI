@@ -94,12 +94,12 @@ function handleRaceOverlay(data) {
     if (data.totalCheckpoints) totals.checkpoints = data.totalCheckpoints;
 
     // Metrics
-    posVal.innerText = data.position || 1;
-    posTotal.innerText = ` / ${totals.racers || '–'}`;
-    lapVal.innerText = data.lapNum || 1;
-    lapTotal.innerText = `/${totals.laps || '–'}`;
-    cpVal.innerText = data.checkpoint || 1;
-    cpTotal.innerText = `/${totals.checkpoints || '–'}`;
+    if (data.position !== undefined) posVal.innerText = data.position;
+    if (totals.racers) posTotal.innerText = ` / ${totals.racers}`;
+    if (data.lapNum !== undefined) lapVal.innerText = data.lapNum;
+    if (totals.laps) lapTotal.innerText = `/${totals.laps}`;
+    if (data.checkpoint !== undefined) cpVal.innerText = data.checkpoint;
+    if (totals.checkpoints) cpTotal.innerText = `/${totals.checkpoints}`;
 
     if (data.bestLapTime && data.bestLapTime > 0) {
         bestLapDisplay.style.display = 'block';
@@ -109,7 +109,13 @@ function handleRaceOverlay(data) {
     }
 
     // Standings
-    renderStandings(data.positions || [], data.mySource);
+    if (data.positions && data.positions.length > 0) {
+        renderStandings(data.positions, data.mySource);
+        const myPos = data.positions.find(p => p.source === data.mySource);
+        if (myPos) {
+            posVal.innerText = myPos.position;
+        }
+    }
 
     // Lap Timer logic
     // If lapNum changed, reset timer
