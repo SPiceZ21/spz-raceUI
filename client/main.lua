@@ -15,9 +15,12 @@ local function UpdateRaceOverlay(data)
     if data.positions then
         for i, racer in ipairs(data.positions) do
             local p = Player(racer.source).state
-            racer.name = racer.name or p['spz:nametag'] or GetPlayerName(GetPlayerFromServerId(racer.source)) or "Racer"
-            racer.avatar = p['spz:avatar'] or "https://i.imgur.com/8NzA8m8.png"
-            racer.banner = p['spz:banner'] or ""
+            local rawName = p['spz:name'] or p['spz:nametag'] or GetPlayerName(GetPlayerFromServerId(racer.source)) or "Racer"
+            if rawName == "**INVALID**" then rawName = GetPlayerName(GetPlayerFromServerId(racer.source)) or "Racer" end
+            if rawName == "**INVALID**" then rawName = "Racer" end
+            racer.name = rawName
+            racer.avatar = p['spz:avatar'] or "https://raw.githubusercontent.com/SPiceZ21/spz-core-media-kit/main/Extra/nametag_profile.png"
+            racer.banner = p['spz:banner'] or "https://raw.githubusercontent.com/SPiceZ21/spz-core-media-kit/main/Extra/nametag.png"
             racer.license = p['spz:license'] or "D-5"
             racer.licenseClass = p['spz:licenseClass'] or "D"
             racer.crew = p['spz:crew'] or ""
