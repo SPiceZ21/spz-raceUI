@@ -4,84 +4,101 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SPZ · Race UI</title>
-<link rel="stylesheet" href="https://cfx-nui-spz-ui/theme.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --panchang: 'Panchang', sans-serif;
-  }
-  html, body { width: 100vw; height: 100vh; overflow: hidden; background: transparent; font-family: var(--spz-font-body); }
-  
-  /* ── Countdown ── */
-  .countdown-wrap { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
-  .countdown-num { 
-    font-family: var(--panchang); font-weight: 800; font-style: italic; font-size: 320px; line-height: 0.8; 
-    color: var(--spz-fg-1); text-shadow: 0 20px 80px rgba(0,0,0,0.5); 
-    animation: count-in 300ms var(--spz-ease-out);
-  }
-  .countdown-go { 
-    font-family: var(--panchang); font-weight: 800; font-style: italic; font-size: 220px; line-height: 0.8; 
-    color: var(--spz-orange); text-shadow: 0 0 100px rgba(255,98,0,0.4), 0 20px 60px rgba(0,0,0,0.6);
-    animation: go-in 300ms var(--spz-ease-out);
-  }
-  @keyframes count-in { from { transform: scale(0.9) translateY(20px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
-  @keyframes go-in { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-  
-  .countdown-info { position: absolute; bottom: 8vh; display: flex; align-items: center; gap: 20px; animation: spz-in 600ms var(--spz-ease-out); }
+@font-face { font-family: 'Panchang'; src: url('public/fonts/Panchang-Variable.ttf') format('truetype'); font-weight: 100 900; }
 
-  /* ── Overlay / HUD ── */
-  .hud-top-left { position: absolute; top: 4vh; left: 2.5vw; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
-  .hud-top-right { position: absolute; top: 4vh; right: 2.5vw; display: flex; flex-direction: column; align-items: flex-end; gap: 16px; pointer-events: none; }
-  
-  .metric-box { display: flex; flex-direction: column; align-items: flex-end; text-shadow: 0 2px 8px rgba(0,0,0,0.5); }
-  .metric-label { font-family: var(--spz-font-mono); font-size: 10px; font-weight: 600; color: var(--spz-orange); text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 2px; }
-  .metric-value { font-family: var(--panchang); font-weight: 800; font-size: 32px; color: var(--spz-fg-1); line-height: 1; }
-  .metric-sub { font-size: 16px; color: var(--spz-fg-3); margin-left: 4px; }
-  
-  .timer-large { font-family: var(--spz-font-mono); font-weight: 600; font-size: 42px; color: var(--spz-fg-1); font-variant-numeric: tabular-nums; line-height: 1; }
+:root {
+  --panchang: 'Panchang', sans-serif;
+  --spz-bg: #07080A; --spz-surface-1: #0E1014; --spz-surface-2: #14171C; --spz-surface-3: #1B1F26;
+  --spz-line: rgba(255,255,255,0.07); --spz-line-faint: rgba(255,255,255,0.04); --spz-line-strong: rgba(255,255,255,0.13);
+  --spz-fg-1: #F0F2F5; --spz-fg-2: #A8AEBB; --spz-fg-3: #5C6370; --spz-fg-4: #3A3F4A;
+  --spz-orange: #FF6200; --spz-danger: #FF3D55;
+  --spz-font-display: 'Panchang', 'Inter', sans-serif;
+  --spz-font-body: 'Inter', system-ui, sans-serif;
+  --spz-font-mono: 'JetBrains Mono', monospace;
+  --spz-shadow-2: 0 4px 16px rgba(0,0,0,0.5), 0 1px 4px rgba(0,0,0,0.4);
+  --spz-ease-out: cubic-bezier(0,0,0.2,1);
+  --spz-ease-snap: cubic-bezier(0.16,1,0.3,1);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: transparent; font-family: var(--spz-font-body); -webkit-font-smoothing: antialiased; }
+.spz-eyebrow { font-family: var(--spz-font-mono); font-size: 11px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--spz-fg-3); }
 
-  /* Standings */
-  .standings-wrap { display: flex; flex-direction: column; gap: 4px; }
-  .stand-row {
-    position: relative; width: 280px; height: 38px; background: rgba(14,16,20,0.95); 
-    border: 1px solid var(--spz-line); display: flex; align-items: center; overflow: hidden;
-    transition: transform 200ms var(--spz-ease-out);
-  }
-  .stand-row[data-me="true"] { border-left: 3px solid var(--spz-orange); transform: scale(1.04) translateX(4px); background: #14171C; z-index: 2; box-shadow: var(--spz-shadow-2); }
-  .stand-num { width: 34px; height: 100%; display: flex; align-items: center; justify-content: center; font-family: var(--panchang); font-weight: 700; font-size: 14px; background: rgba(255,255,255,0.03); border-right: 1px solid var(--spz-line-faint); }
-  .stand-avatar { width: 26px; height: 26px; margin: 0 10px; border-radius: 2px; border: 1px solid var(--spz-line); }
-  .stand-name { font-family: var(--spz-font-display); font-weight: 700; font-size: 13px; text-transform: uppercase; color: var(--spz-fg-1); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .stand-gap { font-family: var(--spz-font-mono); font-size: 11px; color: var(--spz-orange); margin-right: 12px; }
+/* ── Countdown ── */
+.countdown-wrap { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
+.countdown-num {
+  font-family: var(--panchang); font-weight: 800; font-style: italic; font-size: 320px; line-height: 0.8;
+  color: var(--spz-fg-1); text-shadow: 0 20px 80px rgba(0,0,0,0.5);
+  animation: count-in 300ms var(--spz-ease-out);
+}
+.countdown-go {
+  font-family: var(--panchang); font-weight: 800; font-style: italic; font-size: 220px; line-height: 0.8;
+  color: var(--spz-orange); text-shadow: 0 0 100px rgba(255,98,0,0.4), 0 20px 60px rgba(0,0,0,0.6);
+  animation: go-in 300ms var(--spz-ease-out);
+}
+@keyframes count-in { from { transform: scale(0.9) translateY(20px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+@keyframes go-in { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-  /* ── Post Race ── */
-  .stats-strip {
-    position: fixed; top: 0; left: 0; width: 100vw; height: 90px;
-    background: rgba(7,8,10,0.98); border-bottom: 1px solid var(--spz-line);
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    z-index: 2000; overflow: hidden; animation: stats-in 800ms var(--spz-ease-snap);
-  }
-  @keyframes stats-in { from { transform: translateY(-100%); } to { transform: translateY(0); } }
-  
-  .stats-bg-text {
-    position: absolute; font-family: var(--panchang); font-weight: 800; font-size: 140px; 
-    color: rgba(255,255,255,0.03); white-space: nowrap; pointer-events: none; z-index: 0; text-transform: uppercase;
-  }
-  .stats-content { position: relative; z-index: 1; width: 800px; display: flex; flex-direction: column; align-items: center; }
-  .stats-title { font-family: var(--spz-font-mono); font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--spz-orange); margin-bottom: 8px; }
-  
-  .stats-result { display: flex; align-items: center; justify-content: space-between; width: 100%; }
-  .stats-p { font-family: var(--panchang); font-weight: 800; font-size: 48px; color: var(--spz-orange); }
-  
-  .prog-bar-container { width: 100%; height: 28px; background: var(--spz-surface-3); position: relative; overflow: hidden; border: 1px solid var(--spz-line); }
-  .prog-bar-fill { position: absolute; inset: 0; background: var(--spz-orange); transition: width 1s var(--spz-ease-out); }
-  .prog-bar-segments { position: absolute; inset: 0; display: flex; justify-content: space-between; pointer-events: none; }
-  .prog-bar-seg { width: 1px; height: 100%; background: rgba(0,0,0,0.3); }
+.countdown-info { position: absolute; bottom: 8vh; display: flex; align-items: center; gap: 20px; animation: spz-in 600ms var(--spz-ease-out); }
+@keyframes spz-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
-  .diff-line { width: 100%; height: 1px; background: var(--spz-line-strong); position: relative; margin: 10px 0; }
-  .diff-dot { position: absolute; top: 50%; width: 10px; height: 10px; border-radius: 50%; background: var(--spz-orange); box-shadow: 0 0 10px var(--spz-orange); transform: translate(-50%, -50%); transition: left 1s var(--spz-ease-out); }
-  .diff-center { position: absolute; left: 50%; top: -6px; bottom: -6px; width: 1px; background: var(--spz-fg-4); }
+/* ── Overlay / HUD ── */
+.hud-top-left { position: absolute; top: 4vh; left: 2.5vw; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+.hud-top-right { position: absolute; top: 4vh; right: 2.5vw; display: flex; flex-direction: column; align-items: flex-end; gap: 16px; pointer-events: none; }
 
-  .fade-up { animation: fade-up 300ms var(--spz-ease-out); }
-  @keyframes fade-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.metric-box { display: flex; flex-direction: column; align-items: flex-end; text-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+.metric-label { font-family: var(--spz-font-mono); font-size: 10px; font-weight: 600; color: var(--spz-orange); text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 2px; }
+.metric-value { font-family: var(--panchang); font-weight: 800; font-size: 32px; color: var(--spz-fg-1); line-height: 1; }
+.metric-sub { font-size: 16px; color: var(--spz-fg-3); margin-left: 4px; }
+
+.timer-large { font-family: var(--spz-font-mono); font-weight: 600; font-size: 42px; color: var(--spz-fg-1); font-variant-numeric: tabular-nums; line-height: 1; }
+
+/* Standings */
+.standings-wrap { display: flex; flex-direction: column; gap: 4px; }
+.stand-row {
+  position: relative; width: 280px; height: 38px; background: rgba(14,16,20,0.95);
+  border: 1px solid var(--spz-line); display: flex; align-items: center; overflow: hidden;
+  transition: transform 200ms var(--spz-ease-out);
+}
+.stand-row[data-me="true"] { border-left: 3px solid var(--spz-orange); transform: scale(1.04) translateX(4px); background: #14171C; z-index: 2; box-shadow: var(--spz-shadow-2); }
+.stand-num { width: 34px; height: 100%; display: flex; align-items: center; justify-content: center; font-family: var(--panchang); font-weight: 700; font-size: 14px; background: rgba(255,255,255,0.03); border-right: 1px solid var(--spz-line-faint); }
+.stand-avatar { width: 26px; height: 26px; margin: 0 10px; border-radius: 2px; border: 1px solid var(--spz-line); }
+.stand-name { font-family: var(--spz-font-display); font-weight: 700; font-size: 13px; text-transform: uppercase; color: var(--spz-fg-1); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stand-gap { font-family: var(--spz-font-mono); font-size: 11px; color: var(--spz-orange); margin-right: 12px; }
+
+/* ── Post Race ── */
+.stats-strip {
+  position: fixed; top: 0; left: 0; width: 100vw; height: 90px;
+  background: rgba(7,8,10,0.98); border-bottom: 1px solid var(--spz-line);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  z-index: 2000; overflow: hidden; animation: stats-in 800ms var(--spz-ease-snap);
+}
+@keyframes stats-in { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+
+.stats-bg-text {
+  position: absolute; font-family: var(--panchang); font-weight: 800; font-size: 140px;
+  color: rgba(255,255,255,0.03); white-space: nowrap; pointer-events: none; z-index: 0; text-transform: uppercase;
+}
+.stats-content { position: relative; z-index: 1; width: 800px; display: flex; flex-direction: column; align-items: center; }
+.stats-title { font-family: var(--spz-font-mono); font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--spz-orange); margin-bottom: 8px; }
+
+.stats-result { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+.stats-p { font-family: var(--panchang); font-weight: 800; font-size: 48px; color: var(--spz-orange); }
+
+.prog-bar-container { width: 100%; height: 28px; background: var(--spz-surface-3); position: relative; overflow: hidden; border: 1px solid var(--spz-line); }
+.prog-bar-fill { position: absolute; inset: 0; background: var(--spz-orange); transition: width 1s var(--spz-ease-out); }
+.prog-bar-segments { position: absolute; inset: 0; display: flex; justify-content: space-between; pointer-events: none; }
+.prog-bar-seg { width: 1px; height: 100%; background: rgba(0,0,0,0.3); }
+
+.diff-line { width: 100%; height: 1px; background: var(--spz-line-strong); position: relative; margin: 10px 0; }
+.diff-dot { position: absolute; top: 50%; width: 10px; height: 10px; border-radius: 50%; background: var(--spz-orange); box-shadow: 0 0 10px var(--spz-orange); transform: translate(-50%, -50%); transition: left 1s var(--spz-ease-out); }
+.diff-center { position: absolute; left: 50%; top: -6px; bottom: -6px; width: 1px; background: var(--spz-fg-4); }
+
+.fade-up { animation: fade-up 300ms var(--spz-ease-out); }
+@keyframes fade-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 </style>
 </head>
 <body>
@@ -92,11 +109,10 @@
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin></script>
 <script src="https://unpkg.com/lucide@latest"></script>
 
-<script type="text/babel" src="https://cfx-nui-spz-ui/components.jsx"></script>
-
 <script type="text/babel">
 /** @jsx h */
-const { h, render } = preact;
+/** @jsxFrag Fragment */
+const { h, render, Fragment } = preact;
 const { useState, useEffect, useRef, useMemo } = preactHooks;
 
 function formatMs(ms) {
@@ -126,15 +142,15 @@ function RaceOverlay({ data, lapTime, raceTime }) {
   const showMyRow = myIndex >= 4;
 
   return (
-    <>
+    <Fragment>
       <div className="hud-top-left">
         <div className="standings-wrap">
           {top4.map((r, i) => <StandingRow key={r.source} racer={r} isMe={r.source === data.mySource} />)}
           {showMyRow && (
-            <>
+            <Fragment>
               <div style={{ height: 2, background: 'var(--spz-line-faint)', margin: '2px 0' }} />
               <StandingRow racer={racers[myIndex]} isMe={true} />
-            </>
+            </Fragment>
           )}
         </div>
       </div>
@@ -165,7 +181,7 @@ function RaceOverlay({ data, lapTime, raceTime }) {
           </div>
         </div>
       </div>
-    </>
+    </Fragment>
   );
 }
 
@@ -257,7 +273,8 @@ function App() {
 
   useEffect(() => {
     const handler = (e) => {
-      const { action, data } = e.data;
+      if (!e.data || !e.data.action) return;
+      const { action, data = {} } = e.data;
       if (action === 'countdown') {
         setCountdown(data);
         setView('countdown');
@@ -272,7 +289,7 @@ function App() {
           setView('none');
           isRunning.current = false;
         } else {
-          setOverlayData(prev => ({ ...prev, ...data }));
+          setOverlayData(prev => ({ ...prev, ...(data || {}) }));
           setView('overlay');
           if (data.resetTimer) {
             lapStart.current = Date.now();
@@ -308,7 +325,7 @@ function App() {
   useEffect(() => { if (window.lucide) window.lucide.createIcons(); });
 
   return (
-    <>
+    <Fragment>
       {view === 'countdown' && countdown && (
         <div className="countdown-wrap">
           {countdown.isGo ? (
@@ -339,7 +356,7 @@ function App() {
       {view === 'stats' && statsData && (
         <PostRaceStats data={statsData} />
       )}
-    </>
+    </Fragment>
   );
 }
 
