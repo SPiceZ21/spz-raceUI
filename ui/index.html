@@ -1,93 +1,350 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SPiceZ Race UI</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SPZ · Race UI</title>
+<link rel="stylesheet" href="../../spz-ui/components/styles/spz-ui.css">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.cdnfonts.com/css/panchang" rel="stylesheet">
+<style>
+  :root {
+    --panchang: 'Panchang', sans-serif;
+  }
+  html, body { width: 100vw; height: 100vh; overflow: hidden; background: transparent; font-family: var(--spz-font-body); }
+  
+  /* ── Countdown ── */
+  .countdown-wrap { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
+  .countdown-num { 
+    font-family: var(--panchang); font-weight: 800; font-style: italic; font-size: 320px; line-height: 0.8; 
+    color: var(--spz-fg-1); text-shadow: 0 20px 80px rgba(0,0,0,0.5); 
+    animation: count-in 300ms var(--spz-ease-out);
+  }
+  .countdown-go { 
+    font-family: var(--panchang); font-weight: 800; font-style: italic; font-size: 220px; line-height: 0.8; 
+    color: var(--spz-orange); text-shadow: 0 0 100px rgba(255,98,0,0.4), 0 20px 60px rgba(0,0,0,0.6);
+    animation: go-in 300ms var(--spz-ease-out);
+  }
+  @keyframes count-in { from { transform: scale(0.9) translateY(20px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+  @keyframes go-in { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  
+  .countdown-info { position: absolute; bottom: 8vh; display: flex; align-items: center; gap: 20px; animation: spz-in 600ms var(--spz-ease-out); }
+
+  /* ── Overlay / HUD ── */
+  .hud-top-left { position: absolute; top: 4vh; left: 2.5vw; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+  .hud-top-right { position: absolute; top: 4vh; right: 2.5vw; display: flex; flex-direction: column; align-items: flex-end; gap: 16px; pointer-events: none; }
+  
+  .metric-box { display: flex; flex-direction: column; align-items: flex-end; text-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+  .metric-label { font-family: var(--spz-font-mono); font-size: 10px; font-weight: 600; color: var(--spz-orange); text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 2px; }
+  .metric-value { font-family: var(--panchang); font-weight: 800; font-size: 32px; color: var(--spz-fg-1); line-height: 1; }
+  .metric-sub { font-size: 16px; color: var(--spz-fg-3); margin-left: 4px; }
+  
+  .timer-large { font-family: var(--spz-font-mono); font-weight: 600; font-size: 42px; color: var(--spz-fg-1); font-variant-numeric: tabular-nums; line-height: 1; }
+
+  /* Standings */
+  .standings-wrap { display: flex; flex-direction: column; gap: 4px; }
+  .stand-row {
+    position: relative; width: 280px; height: 38px; background: rgba(14,16,20,0.95); 
+    border: 1px solid var(--spz-line); display: flex; align-items: center; overflow: hidden;
+    transition: transform 200ms var(--spz-ease-out);
+  }
+  .stand-row[data-me="true"] { border-left: 3px solid var(--spz-orange); transform: scale(1.04) translateX(4px); background: #14171C; z-index: 2; box-shadow: var(--spz-shadow-2); }
+  .stand-num { width: 34px; height: 100%; display: flex; align-items: center; justify-content: center; font-family: var(--panchang); font-weight: 700; font-size: 14px; background: rgba(255,255,255,0.03); border-right: 1px solid var(--spz-line-faint); }
+  .stand-avatar { width: 26px; height: 26px; margin: 0 10px; border-radius: 2px; border: 1px solid var(--spz-line); }
+  .stand-name { font-family: var(--spz-font-display); font-weight: 700; font-size: 13px; text-transform: uppercase; color: var(--spz-fg-1); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .stand-gap { font-family: var(--spz-font-mono); font-size: 11px; color: var(--spz-orange); margin-right: 12px; }
+
+  /* ── Post Race ── */
+  .stats-strip {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 90px;
+    background: rgba(7,8,10,0.98); border-bottom: 1px solid var(--spz-line);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 2000; overflow: hidden; animation: stats-in 800ms var(--spz-ease-snap);
+  }
+  @keyframes stats-in { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+  
+  .stats-bg-text {
+    position: absolute; font-family: var(--panchang); font-weight: 800; font-size: 140px; 
+    color: rgba(255,255,255,0.03); white-space: nowrap; pointer-events: none; z-index: 0; text-transform: uppercase;
+  }
+  .stats-content { position: relative; z-index: 1; width: 800px; display: flex; flex-direction: column; align-items: center; }
+  .stats-title { font-family: var(--spz-font-mono); font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--spz-orange); margin-bottom: 8px; }
+  
+  .stats-result { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+  .stats-p { font-family: var(--panchang); font-weight: 800; font-size: 48px; color: var(--spz-orange); }
+  
+  .prog-bar-container { width: 100%; height: 28px; background: var(--spz-surface-3); position: relative; overflow: hidden; border: 1px solid var(--spz-line); }
+  .prog-bar-fill { position: absolute; inset: 0; background: var(--spz-orange); transition: width 1s var(--spz-ease-out); }
+  .prog-bar-segments { position: absolute; inset: 0; display: flex; justify-content: space-between; pointer-events: none; }
+  .prog-bar-seg { width: 1px; height: 100%; background: rgba(0,0,0,0.3); }
+
+  .diff-line { width: 100%; height: 1px; background: var(--spz-line-strong); position: relative; margin: 10px 0; }
+  .diff-dot { position: absolute; top: 50%; width: 10px; height: 10px; border-radius: 50%; background: var(--spz-orange); box-shadow: 0 0 10px var(--spz-orange); transform: translate(-50%, -50%); transition: left 1s var(--spz-ease-out); }
+  .diff-center { position: absolute; left: 50%; top: -6px; bottom: -6px; width: 1px; background: var(--spz-fg-4); }
+
+  .fade-up { animation: fade-up 300ms var(--spz-ease-out); }
+  @keyframes fade-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+</style>
 </head>
 <body>
-    <!-- COUNTDOWN -->
-    <div id="countdown-app">
-        <div class="monolithic-center-zone">
-            <div id="countdown-display"></div>
-        </div>
-        <div id="countdown-track-info" class="monolithic-track-info">
-            <span id="mono-track-name" class="mono-track-name"></span>
-            <span class="mono-divider">|</span>
-            <span id="mono-class-laps" class="mono-class-laps"></span>
-            <span class="mono-divider">|</span>
-            <span id="mono-grid" class="mono-grid"></span>
-        </div>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+
+<script type="text/babel" src="../../spz-ui/components/Icon.jsx"></script>
+<script type="text/babel" src="../../spz-ui/components/Badge.jsx"></script>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useMemo } = React;
+
+function formatMs(ms) {
+  const totalSeconds = Math.floor(ms / 1000);
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
+  const cs = Math.floor((ms % 1000) / 10);
+  return `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}.${String(cs).padStart(2,'0')}`;
+}
+
+function StandingRow({ racer, isMe }) {
+  return (
+    <div className="stand-row" data-me={isMe}>
+      <div className="stand-num">{racer.position}</div>
+      {racer.banner && <img src={racer.banner} className="stand-banner" style={{ position: 'absolute', inset: 0, opacity: 0.15, objectFit: 'cover' }} />}
+      <img src={racer.avatar || 'https://i.imgur.com/8NzA8m8.png'} className="stand-avatar" alt="" />
+      <div className="stand-name">{racer.name}</div>
+      <div className="stand-gap">{racer.gap || ''}</div>
     </div>
+  );
+}
 
-    <!-- RACE OVERLAY -->
-    <div id="race-overlay-app">
-        <!-- TOP LEFT: STANDINGS -->
-        <div class="race-overlay-left">
-            <div id="standings-list" class="standings-minimal"></div>
+function RaceOverlay({ data, lapTime, raceTime }) {
+  const racers = data.positions || [];
+  const top4 = racers.slice(0, 4);
+  const myIndex = racers.findIndex(r => r.source === data.mySource);
+  const showMyRow = myIndex >= 4;
+
+  return (
+    <>
+      <div className="hud-top-left">
+        <div className="standings-wrap">
+          {top4.map((r, i) => <StandingRow key={r.source} racer={r} isMe={r.source === data.mySource} />)}
+          {showMyRow && (
+            <>
+              <div style={{ height: 2, background: 'var(--spz-line-faint)', margin: '2px 0' }} />
+              <StandingRow racer={racers[myIndex]} isMe={true} />
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="hud-top-right">
+        <div style={{ display: 'flex', gap: 40 }}>
+          <div className="metric-box">
+            <span className="metric-label">Position</span>
+            <div className="metric-value">
+              <span style={{ fontSize: 24, color: 'var(--spz-orange)', marginRight: 4 }}>P</span>
+              {data.position || 1}<span className="metric-sub">/ {data.totalRacers || '-'}</span>
+            </div>
+          </div>
+          <div className="metric-box">
+            <span className="metric-label">Lap</span>
+            <div className="metric-value">{data.lapNum || 1}<span className="metric-sub">/ {data.totalLaps || '-'}</span></div>
+          </div>
         </div>
 
-        <!-- TOP RIGHT: METRICS -->
-        <div class="race-overlay-right">
-            <div class="minimal-module">
-                <span class="minimal-header">Position</span>
-                <div class="minimal-value" style="font-size: 64px;">
-                    <span style="font-size: 36px; margin-right: 4px; opacity: 0.8;">P</span>
-                    <span id="pos-val">1</span>
-                    <span id="pos-total" class="minimal-subvalue" style="font-size: 20px;"> / –</span>
-                </div>
-            </div>
-
-            <div style="display: flex; gap: 24px; justify-content: flex-end;">
-                <div class="minimal-module">
-                    <span class="minimal-header">Lap</span>
-                    <div class="minimal-value">
-                        <span id="lap-val">1</span>
-                        <span id="lap-total" class="minimal-subvalue" style="font-size: 13px;">/–</span>
-                    </div>
-                </div>
-                <div class="minimal-module">
-                    <span class="minimal-header">Checkpoint</span>
-                    <div class="minimal-value">
-                        <span id="cp-val">1</span>
-                        <span id="cp-total" class="minimal-subvalue" style="font-size: 13px;">/–</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="minimal-module" style="margin-top: 4px;">
-                <span class="minimal-header">Current Lap</span>
-                <div id="current-lap-time" class="timer-minimal-large">00:00.00</div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
-                    <div id="best-lap-time" class="timer-best-minimal" style="display: none;">
-                        BEST: 00:00.00
-                    </div>
-                    <div id="whole-race-time" class="timer-race-total" style="font-size: 18px;">00:00.00</div>
-                </div>
-            </div>
+        <div className="metric-box" style={{ marginTop: 8 }}>
+          <span className="metric-label">Current Lap</span>
+          <div className="timer-large">{formatMs(lapTime)}</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginTop: 6 }}>
+            <span style={{ fontFamily: 'var(--spz-font-mono)', fontSize: 11, color: 'var(--spz-fg-3)' }}>RACE {formatMs(raceTime)}</span>
+            {data.bestLapTime > 0 && (
+              <span style={{ fontFamily: 'var(--spz-font-mono)', fontSize: 11, color: 'var(--spz-orange)', fontWeight: 600 }}>BEST {formatMs(data.bestLapTime)}</span>
+            )}
+          </div>
         </div>
+      </div>
+    </>
+  );
+}
+
+function PostRaceStats({ data }) {
+  const [cardIdx, setCardIdx] = useState(0);
+  const sequence = ['result', 'xp', 'points', 'ir', 'sr'];
+  const card = sequence[cardIdx];
+
+  useEffect(() => {
+    const t = setInterval(() => {
+      setCardIdx(prev => (prev + 1) % sequence.length);
+    }, 4000);
+    return () => clearInterval(t);
+  }, []);
+
+  const title = {
+    result: 'Position Report',
+    xp: 'Experience Gained',
+    points: 'Class Progression',
+    ir: 'Skill Differential',
+    sr: 'Safety Telemetry'
+  }[card];
+
+  return (
+    <div className="stats-strip">
+      <div className="stats-bg-text">{title}</div>
+      <div className="stats-content">
+        <div className="stats-title">{title}</div>
+        <div key={card} className="stats-content-inner fade-up" style={{ width: '100%' }}>
+          {card === 'result' && (
+            <div className="stats-result">
+              <div style={{ flex: 1 }}>
+                <div className="spz-eyebrow">{data.trackName || 'TRACK'}</div>
+                <div style={{ fontSize: 24, fontWeight: 600 }}>{data.finishTime || '00:00.00'}</div>
+              </div>
+              <div className="stats-p">P{data.position || 1}</div>
+              <div style={{ flex: 1, textAlign: 'right' }}>
+                <div className="spz-eyebrow">Best Lap</div>
+                <div style={{ fontSize: 24, fontWeight: 600 }}>{data.bestLap || '00:00.00'}</div>
+              </div>
+            </div>
+          )}
+          {(card === 'xp' || card === 'points') && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+              <div style={{ fontSize: 36, fontWeight: 800, color: 'var(--spz-orange)', fontFamily: 'var(--panchang)' }}>
+                +{card === 'xp' ? data.xpGained : data.classPointsGained}
+              </div>
+              <div className="prog-bar-container">
+                <div className="prog-bar-fill" style={{ width: `${(card === 'xp' ? data.xpNewProgress : data.cpNewProgress) * 100}%` }} />
+                <div className="prog-bar-segments">
+                  {Array.from({ length: 40 }).map((_, i) => <div key={i} className="prog-bar-seg" />)}
+                </div>
+              </div>
+            </div>
+          )}
+          {card === 'ir' && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
+              <div style={{ fontSize: 32, fontWeight: 800, color: data.iRatingDelta >= 0 ? 'var(--spz-orange)' : 'var(--spz-danger)' }}>
+                {data.iRatingDelta >= 0 ? '+' : ''}{data.iRatingDelta}
+              </div>
+              <div className="diff-line">
+                <div className="diff-center" />
+                <div className="diff-dot" style={{ left: `${50 + (data.iRatingDelta || 0)}%` }} />
+              </div>
+            </div>
+          )}
+          {card === 'sr' && (
+            <div style={{ textAlign: 'center', fontSize: 42, fontWeight: 800, color: data.safetyRatingDelta >= 0 ? 'var(--spz-orange)' : 'var(--spz-danger)' }}>
+               {data.safetyRatingDelta >= 0 ? '+' : ''}{data.safetyRatingDelta}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
+  );
+}
 
-    <!-- POST RACE STATS -->
-    <div id="post-race-stats-app">
-        <!-- MASSIVE BACKGROUND TEXT -->
-        <div id="stats-massive-bg-text" class="stats-massive-bg-text"></div>
+function App() {
+  const [view, setView] = useState('none');
+  const [countdown, setCountdown] = useState(null);
+  const [overlayData, setOverlayData] = useState({});
+  const [statsData, setStatsData] = useState(null);
 
-        <div class="stats-slim-container">
-            <div class="stats-slim-header">
-                <h1 id="stats-header-title" class="slim-header-title"></h1>
+  const [lapTime, setLapTime] = useState(0);
+  const [raceTime, setRaceTime] = useState(0);
+  const lapStart = useRef(0);
+  const raceStart = useRef(0);
+  const isRunning = useRef(false);
+
+  useEffect(() => {
+    const handler = (e) => {
+      const { action, data } = e.data;
+      if (action === 'countdown') {
+        setCountdown(data);
+        setView('countdown');
+        if (data.isGo) {
+          isRunning.current = true;
+          lapStart.current = Date.now();
+          raceStart.current = Date.now();
+          setTimeout(() => setView('overlay'), 2000);
+        }
+      } else if (action === 'raceOverlay') {
+        if (data.visible === false) {
+          setView('none');
+          isRunning.current = false;
+        } else {
+          setOverlayData(prev => ({ ...prev, ...data }));
+          setView('overlay');
+          if (data.resetTimer) {
+            lapStart.current = Date.now();
+            raceStart.current = Date.now();
+            isRunning.current = true;
+          }
+        }
+      } else if (action === 'postRaceStats') {
+        setStatsData(data);
+        setView(data ? 'stats' : 'none');
+      } else if (action === 'hideAll') {
+        setView('none');
+        isRunning.current = false;
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, []);
+
+  useEffect(() => {
+    let raf;
+    const update = () => {
+      if (isRunning.current) {
+        setLapTime(Date.now() - lapStart.current);
+        setRaceTime(Date.now() - raceStart.current);
+      }
+      raf = requestAnimationFrame(update);
+    };
+    raf = requestAnimationFrame(update);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  useEffect(() => { if (window.lucide) window.lucide.createIcons(); });
+
+  return (
+    <>
+      {view === 'countdown' && countdown && (
+        <div className="countdown-wrap">
+          {countdown.isGo ? (
+            <div className="countdown-go">RACE</div>
+          ) : (
+            <div className="countdown-num">{countdown.number}</div>
+          )}
+          {!countdown.isGo && (
+            <div className="countdown-info">
+              <div style={{ textAlign: 'right' }}>
+                <div className="spz-eyebrow" style={{ color: 'var(--spz-orange)' }}>{countdown.track || 'Track'}</div>
+                <div style={{ fontFamily: 'var(--panchang)', fontWeight: 700, fontSize: 18, color: 'var(--spz-fg-1)', textTransform: 'uppercase' }}>{countdown.class || 'B'} Class &bull; {countdown.laps || 3} Laps</div>
+              </div>
+              <div style={{ width: 1, height: 40, background: 'var(--spz-line)' }} />
+              <div>
+                <div className="spz-eyebrow">Grid Position</div>
+                <div style={{ fontFamily: 'var(--panchang)', fontWeight: 700, fontSize: 18, color: 'var(--spz-fg-1)' }}>P{countdown.gridPos || 1} / {countdown.total || 8}</div>
+              </div>
             </div>
-
-            <div class="stats-slim-content">
-                <div id="stats-content-inner" class="slim-content-inner">
-                    <!-- CONTENT DYNAMICALLY INJECTED -->
-                </div>
-            </div>
+          )}
         </div>
-    </div>
+      )}
 
-    <script src="script.js"></script>
+      {view === 'overlay' && (
+        <RaceOverlay data={overlayData} lapTime={lapTime} raceTime={raceTime} />
+      )}
+
+      {view === 'stats' && statsData && (
+        <PostRaceStats data={statsData} />
+      )}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
 </body>
 </html>
