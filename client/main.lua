@@ -59,12 +59,44 @@ local function ShowPostRaceStats(data)
     })
 end
 
+-- Time Trial Exports
+local function TT_ShowMenu(tracks)
+    SetNuiFocus(true, true)
+    SendNUIMessage({
+        action = 'tt_open_menu',
+        data = { tracks = tracks }
+    })
+end
+
+local function TT_UpdateHUD(data)
+    SendNUIMessage({
+        action = 'tt_hud_show',
+        data = data
+    })
+end
+
+local function TT_Hide()
+    SetNuiFocus(false, false)
+    SendNUIMessage({ action = 'tt_hide' })
+end
+
+local function TT_Broadcast(action, data)
+    SendNUIMessage({
+        action = action,
+        data = data
+    })
+end
+
 -- Exports
 exports('ShowCountdown', ShowCountdown)
 exports('UpdateRaceOverlay', UpdateRaceOverlay)
 exports('SetRaceOverlayVisible', SetRaceOverlayVisible)
 exports('HideAll', HideAll)
 exports('ShowPostRaceStats', ShowPostRaceStats)
+exports('TT_ShowMenu', TT_ShowMenu)
+exports('TT_UpdateHUD', TT_UpdateHUD)
+exports('TT_Hide', TT_Hide)
+exports('TT_Broadcast', TT_Broadcast)
 
 -- Test Commands
 RegisterCommand('testcountdown', function(source, args)
@@ -128,3 +160,27 @@ RegisterCommand('teststats', function()
         safetyRatingDelta = 4
     })
 end, false)
+
+-- Time Trial NUI Callbacks
+RegisterNUICallback("tt_selectTrack", function(data, cb)
+    SetNuiFocus(false, false)
+    TriggerEvent("SPZ:tt:nuiSelectTrack", data.index)
+    cb("ok")
+end)
+
+RegisterNUICallback("tt_closeMenu", function(_, cb)
+    SetNuiFocus(false, false)
+    TriggerEvent("SPZ:tt:nuiCloseMenu")
+    cb("ok")
+end)
+
+RegisterNUICallback("tt_dismissResults", function(_, cb)
+    SetNuiFocus(false, false)
+    TriggerEvent("SPZ:tt:nuiDismissResults")
+    cb("ok")
+end)
+
+RegisterNUICallback("tt_restartBtn", function(_, cb)
+    TriggerEvent("SPZ:tt:nuiRestartBtn")
+    cb("ok")
+end)
