@@ -22,6 +22,7 @@ local function ShowCountdown(data)
     end
 
     if data.laps then hudCache.totalLaps = data.laps end
+    if data.totalCheckpoints then hudCache.totalCheckpoints = data.totalCheckpoints end
     if data.total then hudCache.myPosition = data.gridPos or hudCache.myPosition end
 
     SendNUIMessage({
