@@ -1,4 +1,4 @@
-fx_version 'cerulean'
+﻿fx_version 'cerulean'
 game 'gta5'
 
 description 'SPiceZ Race UI (Countdown & Overlay)'
@@ -22,3 +22,4 @@ exports {
     'HideAll',
     'ShowPostRaceStats'
 }
+
