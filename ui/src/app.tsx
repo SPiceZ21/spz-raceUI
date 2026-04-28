@@ -6,8 +6,7 @@ import {
   Layout, 
   TrendingUp, 
   TrendingDown,
-  X,
-  Timer
+  Navigation
 } from 'lucide-preact'
 import { Button } from './components/Button'
 import { Card } from './components/Card'
@@ -86,19 +85,19 @@ const Standings = ({ positions, mySource }: { positions: RacerEntry[], mySource?
 )
 
 const Telemetry = ({ data }: { data: RaceOverlayData }) => {
-  const totalCPs = parseInt(data.totalCheckpoints) || 0
+  const totalCPs = data.totalCheckpoints ? parseInt(data.totalCheckpoints) : 0
   const cpProgress = (totalCPs > 0) ? ((data.checkpoint || 1) / totalCPs) * 100 : 0
   
   const displayTime = data.formattedTime || formatTime(data.currentLapTime || 0)
   const displayBest = typeof data.bestLapTime === 'string' ? data.bestLapTime : formatTime(data.bestLapTime || 0)
-  const posLabel = data.myPosition || "TT"
+  const posLabel = data.myPosition || "1"
 
   return (
     <div className="telemetry-hud">
       <div className="telemetry-top">
         <div className="stat-group">
           <Flag size={12} />
-          <span className="val">LAP {data.lapNum || 1}/{data.totalLaps || '∞'}</span>
+          <span className="val">LAP {data.lapNum || 1}/{data.totalLaps || '1'}</span>
         </div>
         <div className="stat-group">
           <Layout size={12} />
@@ -141,7 +140,7 @@ export function App() {
   const [overlay, setOverlay]       = useState<RaceOverlayData>({})
   const [ttMenu, setTTMenu]         = useState<any[]>([])
   const [postRace, setPostRace]     = useState<any>(null)
-  const [autoClose, setAutoClose]   = useState(10)
+  const [autoClose, setAutoClose]   = useState(12)
   const autoCloseRef = useRef<any>(null)
 
   const dismissStats = () => {
@@ -160,17 +159,34 @@ export function App() {
         case 'countdown':
           setCountdown(data)
           setView('countdown')
-          if (data.isGo) setTimeout(() => setView('none'), 1500)
+          
+          // Sync totals to overlay state early
+          if (data.laps || data.totalCheckpoints) {
+            setOverlay(prev => ({
+              ...prev,
+              totalLaps: data.laps || prev.totalLaps,
+              totalCheckpoints: data.totalCheckpoints || prev.totalCheckpoints,
+              myPosition: data.gridPos || prev.myPosition
+            }))
+          }
+
+          if (data.isGo) {
+            setTimeout(() => setView('none'), 1500)
+            setView('overlay') // Force switch to overlay on GO
+          }
           break
 
         case 'raceOverlay':
-          if (data.visible === false) setView('none')
-          else {
+          if (data.visible === false) {
+            setView('none')
+          } else {
             const myEntry = data.positions?.find((r: any) => r.source === data.mySource)
             setOverlay(prev => ({ 
               ...prev, 
               ...data, 
-              myPosition: myEntry?.position || prev.myPosition 
+              myPosition: myEntry?.position || data.myPosition || prev.myPosition,
+              totalLaps: data.totalLaps || prev.totalLaps,
+              totalCheckpoints: data.totalCheckpoints || prev.totalCheckpoints
             }))
             setView('overlay')
           }
@@ -192,6 +208,22 @@ export function App() {
             myPosition: 'TT'
           })
           setView('overlay')
+          break
+
+        case 'tt_lap_started':
+          setOverlay(prev => ({ 
+            ...prev, 
+            lapNum: data.lap, 
+            bestLapTime: data.bestLap || prev.bestLapTime 
+          }))
+          break
+
+        case 'tt_next_cp':
+          setOverlay(prev => ({ 
+            ...prev, 
+            checkpoint: data.cpIndex, 
+            totalCheckpoints: data.total || prev.totalCheckpoints 
+          }))
           break
 
         case 'postRaceStats':
