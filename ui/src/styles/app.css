@@ -71,7 +71,7 @@ body {
 /* ── Telemetry (Top Right - USER REQUEST) ─────────────────── */
 
 .telemetry-hud {
-  position: absolute; top: 40px; right: 30px;
+  position: absolute; top: 40px; right: 80px;
   width: 320px;
   display: flex; flex-direction: column; gap: 8px;
   background: transparent !important; /* NO BG */
