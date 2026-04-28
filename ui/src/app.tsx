@@ -6,7 +6,7 @@ import {
   Layout, 
   TrendingUp, 
   TrendingDown,
-  X
+  Navigation
 } from 'lucide-preact'
 import { Button } from './components/Button'
 import { Card } from './components/Card'
@@ -36,7 +36,7 @@ function formatTime(ms: number) {
 interface RacerEntry {
   source: number
   name?: string
-  position: number
+  position: number | string
   gap?: string
   avatar?: string
   licenseClass?: string
@@ -47,13 +47,14 @@ interface RaceOverlayData {
   positions?: RacerEntry[]
   mySource?: number
   lapNum?: number
-  totalLaps?: number | string
+  totalLaps?: any
   checkpoint?: number
-  totalCheckpoints?: number | string
+  totalCheckpoints?: any
   bestLapTime?: any
   currentLapTime?: any
   formattedTime?: string
   delta?: number
+  myPosition?: number | string
 }
 
 /* ── HUD Components ────────────────────────────────────────── */
@@ -84,19 +85,19 @@ const Standings = ({ positions, mySource }: { positions: RacerEntry[], mySource?
 )
 
 const Telemetry = ({ data }: { data: RaceOverlayData }) => {
-  const cpProgress = (typeof data.totalCheckpoints === 'number' && data.totalCheckpoints > 0) 
-    ? ((data.checkpoint || 1) / data.totalCheckpoints) * 100 
-    : 0
+  const totalCPs = parseInt(data.totalCheckpoints) || 0
+  const cpProgress = (totalCPs > 0) ? ((data.checkpoint || 1) / totalCPs) * 100 : 0
   
   const displayTime = data.formattedTime || formatTime(data.currentLapTime || 0)
   const displayBest = typeof data.bestLapTime === 'string' ? data.bestLapTime : formatTime(data.bestLapTime || 0)
+  const posLabel = data.myPosition || "TT"
 
   return (
     <div className="telemetry-hud">
       <div className="telemetry-top">
         <div className="stat-group">
           <Flag size={12} />
-          <span className="val">LAP {data.lapNum || 1}/{data.totalLaps || '?'}</span>
+          <span className="val">LAP {data.lapNum || 1}/{data.totalLaps || '∞'}</span>
         </div>
         <div className="stat-group">
           <Layout size={12} />
@@ -105,6 +106,10 @@ const Telemetry = ({ data }: { data: RaceOverlayData }) => {
       </div>
 
       <div className="timer-main">
+        <div className="pos-badge">
+          <span className="label">POS</span>
+          <span className="val">{posLabel}</span>
+        </div>
         <div className="lap-timer">{displayTime}</div>
         {data.delta !== undefined && (
           <div className={`delta-tag ${data.delta <= 0 ? 'faster' : 'slower'}`}>
@@ -151,12 +156,16 @@ export function App() {
         case 'raceOverlay':
           if (data.visible === false) setView('none')
           else {
-            setOverlay(prev => ({ ...prev, ...data }))
+            const myEntry = data.positions?.find((r: any) => r.source === data.mySource)
+            setOverlay(prev => ({ 
+              ...prev, 
+              ...data, 
+              myPosition: myEntry?.position || prev.myPosition 
+            }))
             setView('overlay')
           }
           break
 
-        // Time Trial Specific Handlers
         case 'tt_timer':
           setOverlay(prev => ({ ...prev, formattedTime: data.formatted }))
           setView('overlay')
@@ -165,11 +174,12 @@ export function App() {
         case 'tt_hud_show':
           setOverlay({
             lapNum: 1,
-            totalLaps: data.lapTotal || '?',
+            totalLaps: '∞',
             checkpoint: data.cpIndex || 1,
             totalCheckpoints: data.cpTotal || '?',
             bestLapTime: data.bestLap || 0,
-            formattedTime: '00:00.000'
+            formattedTime: '00:00.000',
+            myPosition: 'TT'
           })
           setView('overlay')
           break
@@ -194,7 +204,7 @@ export function App() {
           setOverlay(prev => ({ 
             ...prev, 
             bestLapTime: data.bestLap,
-            lapNum: data.lapNum + 1,
+            lapNum: (data.lapNum || data.lap || 1) + 1,
             checkpoint: 1
           }))
           break
@@ -210,9 +220,6 @@ export function App() {
           break
 
         case 'tt_hide':
-          setView('none')
-          break
-
         case 'hideAll':
           setView('none')
           break
@@ -245,7 +252,7 @@ export function App() {
             <div className="menu-header-desc">Select a circuit to begin practice</div>
             <div className="track-list">
               {ttMenu.map((t, i) => (
-                <div key={i} className="track-item" onClick={() => post('tt_selectTrack', { index: i + 1 })}>
+                <div key={i} className="track-item" onClick={() => post('tt_selectTrack', { index: t.index || i + 1 })}>
                   <div className="track-info">
                     <span className="name">{t.name}</span>
                     <span className="type">{t.type}</span>
@@ -263,7 +270,7 @@ export function App() {
         <div className="stats-overlay">
           <Card className="post-race-card">
              <div className="podium-badge">RACE COMPLETE</div>
-             <div className="finish-pos">{postRace.position}<span>{postRace.position === 1 ? 'ST' : 'RD'}</span></div>
+             <div className="finish-pos">{postRace.position}<span>{postRace.position === 1 ? 'ST' : postRace.position === 2 ? 'ND' : 'RD'}</span></div>
              <div className="track-title">{postRace.trackName}</div>
              
              <div className="stats-grid">
