@@ -1,6 +1,17 @@
 import { useState, useEffect } from 'preact/hooks'
+import { 
+  Trophy, 
+  Timer as TimerIcon, 
+  Flag, 
+  ChevronRight, 
+  Layout, 
+  Clock, 
+  TrendingUp, 
+  TrendingDown,
+  X
+} from 'lucide-preact'
 import { Button } from './components/Button'
-import './components/Button.css'
+import './app.css'
 
 const RESOURCE = GetParentResourceName()
 
@@ -12,11 +23,15 @@ function post(action: string, data: object = {}) {
   }).catch(() => {})
 }
 
-function ordinalSuffix(n: number) {
-  const s = ['th', 'st', 'nd', 'rd']
-  const v = n % 100
-  return s[(v - 20) % 10] ?? s[v] ?? s[0]
+function formatTime(ms: number) {
+  if (!ms || ms === 0) return "00:00.000"
+  const m = math.floor(ms / 60000)
+  const s = math.floor((ms % 60000) / 1000)
+  const t = ms % 1000
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}.${t.toString().padStart(3, '0')}`
 }
+
+const math = Math; // Alias for consistency with Lua logic if needed
 
 /* ── Types ─────────────────────────────────────────────────── */
 
@@ -35,7 +50,15 @@ interface RacerEntry {
   name?: string
   position: number
   gap?: string
-  crew_tag?: string
+  avatar?: string
+  isMe?: boolean
+  isBestLap?: boolean
+}
+
+interface SectorTime {
+  id: number
+  time: number
+  delta?: number
 }
 
 interface RaceOverlayData {
@@ -47,167 +70,135 @@ interface RaceOverlayData {
   checkpoint?: number
   totalCheckpoints?: number
   bestLapTime?: number
-  isFirstLap?: boolean
-  resetTimer?: boolean
+  currentLapTime?: number
+  delta?: number
+  lastSector?: SectorTime
+  sectors?: SectorTime[]
 }
 
-interface PostRaceData {
-  trackName?: string
-  finishTime?: string
-  position?: number
+interface TimeTrialData {
+  visible?: boolean
+  track?: string
+  trackType?: string
+  lapLabel?: string
   bestLap?: string
-  xpGained?: number
-  xpNewProgress?: number
-  classPointsGained?: number
-  cpNewProgress?: number
-  iRatingDelta?: number
-  safetyRatingDelta?: number
+  currentTimer?: string
+  cpIndex?: number
+  cpTotal?: number
+  restartKey?: string
+  allLaps?: { lapNum: number; label: string; time: string; isBest: boolean }[]
+  tracks?: { name: string; type: string; id: number }[]
 }
 
-/* ── Countdown ─────────────────────────────────────────────── */
+/* ── Components ─────────────────────────────────────────────── */
 
-function Countdown({ data }: { data: CountdownData }) {
-  return (
-    <div class="countdown-root">
-      {data.isGo ? (
-        <div class="countdown-go">GO!</div>
-      ) : (
-        <div class="countdown-number">{data.number}</div>
-      )}
-      {!data.isGo && (
-        <div class="countdown-meta">
-          {data.track && <span>{data.track}</span>}
-          {data.class && <span>CLASS {data.class}</span>}
-          {data.laps && <span>{data.laps} LAPS</span>}
-          {data.gridPos != null && <span>P{data.gridPos}/{data.total}</span>}
-        </div>
-      )}
+const Countdown = ({ data }: { data: CountdownData }) => (
+  <div className="countdown-container">
+    <div className={`countdown-box ${data.isGo ? 'is-go' : ''}`}>
+      {data.isGo ? 'GO!' : data.number}
     </div>
-  )
-}
-
-/* ── Race standings overlay ─────────────────────────────────── */
-
-function RaceOverlay({ data }: { data: RaceOverlayData }) {
-  const positions = data.positions ?? []
-  const mySource  = data.mySource
-
-  return (
-    <div class="race-overlay">
-      <div class="race-standings">
-        <div class="race-standings-header">
-          <span class="race-standings-label">Standings</span>
-          <span class="race-standings-label">
-            Lap {data.lapNum ?? 1} / {data.totalLaps ?? '?'}
-          </span>
+    {!data.isGo && data.track && (
+      <div className="countdown-info">
+        <div className="track-name">{data.track}</div>
+        <div className="race-meta">
+          <span>{data.class} CLASS</span>
+          <div className="dot" />
+          <span>{data.laps} LAPS</span>
+          <div className="dot" />
+          <span>GRID P{data.gridPos}/{data.total}</span>
         </div>
+      </div>
+    )}
+  </div>
+)
 
-        {positions.map(r => {
-          const isMe = r.source === mySource
-          const posClass = r.position === 1 ? 'p1' : r.position === 2 ? 'p2' : r.position === 3 ? 'p3' : ''
-          return (
-            <div key={r.source} class={`racer-row${isMe ? ' is-me' : ''}`}>
-              <span class={`racer-pos ${posClass}`}>{r.position}</span>
-              <span class={`racer-name${isMe ? ' is-me' : ''}`}>{r.name ?? `P${r.position}`}</span>
-              <span class="racer-gap">{r.gap ?? ''}</span>
-            </div>
-          )
-        })}
+const Standings = ({ positions, mySource }: { positions: RacerEntry[], mySource?: number }) => (
+  <div className="standings-list">
+    {positions.map(r => {
+      const isMe = r.source === mySource
+      return (
+        <div key={r.source} className={`racer-card ${isMe ? 'is-me' : ''}`}>
+          <div className="racer-pos">{r.position}</div>
+          <div className="racer-avatar">
+             <img src={r.avatar || 'https://raw.githubusercontent.com/SPiceZ21/spz-core-media-kit/main/Extra/nametag_profile.png'} alt="" />
+          </div>
+          <div className="racer-details">
+            <span className="name">{r.name}</span>
+            <span className="gap">{r.gap || '--'}</span>
+          </div>
+        </div>
+      )
+    })}
+  </div>
+)
 
-        {(data.checkpoint != null) && (
-          <div class="race-lap-bar">
-            <span class="race-lap-text">CP {data.checkpoint} / {data.totalCheckpoints}</span>
-            {data.bestLapTime ? (
-              <span class="race-lap-text">Best: {data.bestLapTime}ms</span>
-            ) : null}
+const Telemetry = ({ data }: { data: RaceOverlayData }) => {
+  const cpProgress = data.totalCheckpoints ? ((data.checkpoint || 1) / data.totalCheckpoints) * 100 : 0
+  
+  return (
+    <div className="telemetry-hud">
+      <div className="telemetry-top">
+        <div className="stat-group">
+          <Flag size={14} />
+          <span className="label">LAP</span>
+          <span className="value">{data.lapNum || 1} / {data.totalLaps || '?'}</span>
+        </div>
+        <div className="stat-group">
+          <Layout size={14} />
+          <span className="label">CP</span>
+          <span className="value">{data.checkpoint || 1} / {data.totalCheckpoints || '?'}</span>
+        </div>
+      </div>
+
+      <div className="timer-main">
+        <div className="lap-timer">{formatTime(data.currentLapTime || 0)}</div>
+        {data.delta !== undefined && (
+          <div className={`delta-tag ${data.delta <= 0 ? 'faster' : 'slower'}`}>
+            {data.delta <= 0 ? <TrendingDown size={12} /> : <TrendingUp size={12} />}
+            {data.delta <= 0 ? '' : '+'}{data.delta.toFixed(3)}s
           </div>
         )}
       </div>
-    </div>
-  )
-}
 
-/* ── Post-race stats ───────────────────────────────────────── */
+      <div className="progress-track">
+        <div className="progress-fill" style={{ width: `${cpProgress}%` }} />
+      </div>
 
-function PostRaceStats({ data, onDismiss }: { data: PostRaceData; onDismiss: () => void }) {
-  const pos = data.position ?? 1
-  const suffix = ordinalSuffix(pos)
-  const ir = data.iRatingDelta ?? 0
-  const sr = data.safetyRatingDelta ?? 0
-
-  return (
-    <div class="stats-overlay">
-      <div class="stats-card">
-        <div class="stats-hero">
-          <div class="stats-position">
-            {pos}<span class="stats-position-suffix">{suffix}</span>
-          </div>
-          <div class="stats-track">{data.trackName ?? 'Race Complete'}</div>
-        </div>
-
-        <div class="stats-grid">
-          <div class="stats-cell">
-            <div class="stats-cell-label">Finish Time</div>
-            <div class="stats-cell-val">{data.finishTime ?? '--:--'}</div>
-          </div>
-          <div class="stats-cell">
-            <div class="stats-cell-label">Best Lap</div>
-            <div class="stats-cell-val">{data.bestLap ?? '--:--'}</div>
-          </div>
-          <div class="stats-cell">
-            <div class="stats-cell-label">XP Gained</div>
-            <div class="stats-cell-val positive">+{data.xpGained ?? 0}</div>
-          </div>
-          <div class="stats-cell">
-            <div class="stats-cell-label">Class Points</div>
-            <div class="stats-cell-val positive">+{data.classPointsGained ?? 0}</div>
-          </div>
-        </div>
-
-        <div class="stats-rating-row">
-          <span class="stats-rating-label">iRating</span>
-          <span class={`stats-rating-delta ${ir >= 0 ? 'pos' : 'neg'}`}>
-            {ir >= 0 ? '+' : ''}{ir}
-          </span>
-        </div>
-
-        <div class="stats-rating-row">
-          <span class="stats-rating-label">Safety Rating</span>
-          <span class={`stats-rating-delta ${sr >= 0 ? 'pos' : 'neg'}`}>
-            {sr >= 0 ? '+' : ''}{sr}
-          </span>
-        </div>
-
-        {data.xpNewProgress != null && (
-          <div class="xp-bar-wrap">
-            <div class="xp-bar-label">
-              <span>XP Progress</span>
-              <span>{Math.round((data.xpNewProgress ?? 0) * 100)}%</span>
-            </div>
-            <div class="xp-bar-track">
-              <div class="xp-bar-fill" style={{ width: `${(data.xpNewProgress ?? 0) * 100}%` }} />
-            </div>
-          </div>
-        )}
-
-        <div class="stats-footer">
-          <Button variant="primary" onClick={onDismiss}>Continue</Button>
+      <div className="telemetry-bottom">
+        <div className="best-lap">
+          <Trophy size={12} />
+          BEST: {formatTime(data.bestLapTime || 0)}
         </div>
       </div>
     </div>
   )
 }
 
-/* ── Root app ──────────────────────────────────────────────── */
+const SectorFeed = ({ sectors }: { sectors?: SectorTime[] }) => (
+  <div className="sector-feed">
+    <div className="header">SECTORS</div>
+    {sectors?.slice(-4).reverse().map((s, i) => (
+      <div key={i} className="sector-row">
+        <span>S{s.id}</span>
+        <span className={s.delta && s.delta <= 0 ? 'text-success' : 'text-danger'}>
+          {formatTime(s.time)}
+        </span>
+      </div>
+    ))}
+  </div>
+)
 
-type ActiveView = 'none' | 'countdown' | 'overlay' | 'poststats'
+/* ── Root App ──────────────────────────────────────────────── */
+
+type ActiveView = 'none' | 'countdown' | 'overlay' | 'poststats' | 'tt_menu' | 'tt_results'
 
 export function App() {
   const [view, setView]             = useState<ActiveView>('none')
   const [countdown, setCountdown]   = useState<CountdownData>({})
   const [overlay, setOverlay]       = useState<RaceOverlayData>({})
-  const [postRace, setPostRace]     = useState<PostRaceData | null>(null)
-  const [cdTimer, setCdTimer]       = useState<ReturnType<typeof setTimeout> | null>(null)
+  const [ttData, setTTData]         = useState<TimeTrialData>({})
+  const [postRace, setPostRace]     = useState<any>(null)
+  const [cdTimer, setCdTimer]       = useState<any>(null)
 
   useEffect(() => {
     const handler = (e: MessageEvent) => {
@@ -229,7 +220,7 @@ export function App() {
           if (data.visible === false) {
             setView('none')
           } else {
-            setOverlay(data)
+            setOverlay(prev => ({ ...prev, ...data }))
             if (view !== 'overlay') setView('overlay')
           }
           break
@@ -237,6 +228,20 @@ export function App() {
         case 'postRaceStats':
           setPostRace(data)
           setView('poststats')
+          break
+
+        case 'tt_open_menu':
+          setTTData({ ...ttData, tracks: data.tracks })
+          setView('tt_menu')
+          break
+
+        case 'tt_hud_show':
+          setTTData(prev => ({ ...prev, ...data, visible: true }))
+          setView('overlay') // Reuse overlay view for TT
+          break
+
+        case 'tt_hide':
+          setView('none')
           break
 
         case 'hideAll':
@@ -247,19 +252,109 @@ export function App() {
     }
     window.addEventListener('message', handler)
     return () => window.removeEventListener('message', handler)
-  }, [view, cdTimer])
+  }, [view, cdTimer, ttData])
 
-  const dismissStats = () => {
+  const handleDismiss = () => {
     post('dismissStats')
-    setPostRace(null)
+    setView('none')
+  }
+
+  const selectTrack = (index: number) => {
+    post('tt_selectTrack', { index })
+    setView('none')
+  }
+
+  const closeMenu = () => {
+    post('tt_closeMenu')
     setView('none')
   }
 
   return (
-    <>
+    <div className="nui-root">
       {view === 'countdown' && <Countdown data={countdown} />}
-      {view === 'overlay'   && <RaceOverlay data={overlay} />}
-      {view === 'poststats' && postRace && <PostRaceStats data={postRace} onDismiss={dismissStats} />}
-    </>
+      
+      {view === 'overlay' && (
+        <div className="hud-layer">
+          <Standings positions={overlay.positions || []} mySource={overlay.mySource} />
+          <Telemetry data={overlay} />
+          <SectorFeed sectors={overlay.sectors} />
+        </div>
+      )}
+
+      {view === 'tt_menu' && (
+        <div className="menu-overlay">
+          <div className="tt-menu-card">
+            <div className="menu-header">
+              <div>
+                <h2>TIME TRIALS</h2>
+                <p>Select a circuit to begin practice</p>
+              </div>
+              <button className="close-btn" onClick={closeMenu}><X size={20}/></button>
+            </div>
+            <div className="track-list">
+              {ttData.tracks?.map((t, i) => (
+                <div key={i} className="track-item" onClick={() => selectTrack(i + 1)}>
+                  <div className="track-icon"><Flag size={18}/></div>
+                  <div className="track-info">
+                    <span className="name">{t.name}</span>
+                    <span className="type">{t.type}</span>
+                  </div>
+                  <ChevronRight size={16} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {view === 'poststats' && postRace && (
+        <div className="stats-overlay">
+          <div className="post-race-card">
+            <div className="podium-badge">FINISH</div>
+            <div className="finish-pos">
+              {postRace.position}
+              <span>{postRace.position === 1 ? 'ST' : postRace.position === 2 ? 'ND' : 'RD'}</span>
+            </div>
+            <h2 className="track-title">{postRace.trackName}</h2>
+            
+            <div className="stats-grid">
+              <div className="stat-box">
+                <span className="label">TOTAL TIME</span>
+                <span className="val">{postRace.finishTime}</span>
+              </div>
+              <div className="stat-box">
+                <span className="label">BEST LAP</span>
+                <span className="val">{postRace.bestLap}</span>
+              </div>
+            </div>
+
+            <div className="progression-section">
+              <div className="prog-row">
+                <span>XP GAINED</span>
+                <span className="gain">+{postRace.xpGained}</span>
+              </div>
+              <div className="prog-bar"><div className="fill" style={{width: `${(postRace.xpNewProgress || 0) * 100}%`}}/></div>
+              
+              <div className="rating-row">
+                <div className="rating-item">
+                  <span className="label">iRATING</span>
+                  <span className={postRace.iRatingDelta >= 0 ? 'pos' : 'neg'}>
+                    {postRace.iRatingDelta >= 0 ? '+' : ''}{postRace.iRatingDelta}
+                  </span>
+                </div>
+                <div className="rating-item">
+                  <span className="label">SAFETY</span>
+                  <span className={postRace.safetyRatingDelta >= 0 ? 'pos' : 'neg'}>
+                    {postRace.safetyRatingDelta >= 0 ? '+' : ''}{postRace.safetyRatingDelta}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <Button className="continue-btn" onClick={handleDismiss}>CONTINUE</Button>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }

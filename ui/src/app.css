@@ -1,0 +1,477 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@700;800;900&display=swap');
+
+:root {
+  --color-primary: #00e5ff;
+  --color-secondary: #7000ff;
+  --color-danger: #ff3d71;
+  --color-success: #00ff9d;
+  --color-warning: #ffaa00;
+  --bg-glass: rgba(10, 10, 10, 0.75);
+  --border-glass: rgba(255, 255, 255, 0.08);
+  --font-main: 'Inter', sans-serif;
+  --font-branding: 'Outfit', sans-serif;
+  --shadow-premium: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+}
+
+* {
+  box-sizing: border-box;
+  user-select: none;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: var(--font-main);
+  color: white;
+  background: transparent;
+}
+
+.nui-root {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+}
+
+/* ── Countdown ─────────────────────────────────────────────── */
+
+.countdown-container {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.countdown-box {
+  font-family: var(--font-branding);
+  font-size: 120px;
+  font-weight: 900;
+  color: white;
+  text-shadow: 0 0 40px rgba(255, 255, 255, 0.3);
+  animation: scale-up 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.countdown-box.is-go {
+  color: var(--color-success);
+  font-size: 160px;
+  text-shadow: 0 0 60px rgba(0, 255, 157, 0.5);
+}
+
+.countdown-info {
+  background: var(--bg-glass);
+  backdrop-filter: blur(12px);
+  padding: 16px 32px;
+  border-radius: 12px;
+  border: 1px solid var(--border-glass);
+  text-align: center;
+  box-shadow: var(--shadow-premium);
+}
+
+.track-name {
+  font-family: var(--font-branding);
+  font-size: 24px;
+  letter-spacing: 2px;
+  margin-bottom: 4px;
+}
+
+.race-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.dot {
+  width: 4px;
+  height: 4px;
+  background: var(--color-primary);
+  border-radius: 50%;
+}
+
+/* ── HUD Layers ────────────────────────────────────────────── */
+
+.hud-layer {
+  width: 100%;
+  height: 100%;
+  padding: 40px;
+  display: grid;
+  grid-template-columns: 320px 1fr 320px;
+  grid-template-rows: 1fr auto;
+}
+
+/* ── Standings ────────────────────────────────────────────── */
+
+.standings-list {
+  grid-row: 1 / 3;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: center;
+}
+
+.racer-card {
+  background: var(--bg-glass);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border-glass);
+  padding: 10px 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.3s ease;
+  width: 260px;
+}
+
+.racer-card.is-me {
+  background: rgba(0, 229, 255, 0.15);
+  border-color: var(--color-primary);
+  width: 280px;
+  transform: translateX(10px);
+}
+
+.racer-pos {
+  font-family: var(--font-branding);
+  font-size: 18px;
+  font-weight: 800;
+  width: 24px;
+}
+
+.racer-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.racer-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.racer-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.racer-details .name {
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.racer-details .gap {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 600;
+}
+
+/* ── Telemetry HUD (Bottom Center) ─────────────────────────── */
+
+.telemetry-hud {
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: center;
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-glass);
+  padding: 20px 32px;
+  border-radius: 20px;
+  width: 440px;
+  box-shadow: var(--shadow-premium);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.telemetry-top {
+  display: flex;
+  justify-content: space-between;
+}
+
+.stat-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.stat-group .label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.stat-group .value {
+  font-family: var(--font-branding);
+  font-size: 16px;
+  color: white;
+  font-weight: 800;
+}
+
+.timer-main {
+  text-align: center;
+  position: relative;
+}
+
+.lap-timer {
+  font-family: var(--font-branding);
+  font-size: 48px;
+  font-weight: 900;
+  letter-spacing: -1px;
+  color: white;
+}
+
+.delta-tag {
+  position: absolute;
+  top: -10px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 800;
+  font-family: monospace;
+}
+
+.delta-tag.faster { background: rgba(0, 255, 157, 0.2); color: var(--color-success); }
+.delta-tag.slower { background: rgba(255, 61, 113, 0.2); color: var(--color-danger); }
+
+.progress-track {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+  transition: width 0.3s linear;
+}
+
+.telemetry-bottom {
+  display: flex;
+  justify-content: center;
+}
+
+.best-lap {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-warning);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 170, 0, 0.1);
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+/* ── Sector Feed ───────────────────────────────────────────── */
+
+.sector-feed {
+  grid-column: 3;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.sector-feed .header {
+  font-family: var(--font-branding);
+  font-size: 14px;
+  letter-spacing: 2px;
+  color: rgba(255, 255, 255, 0.3);
+  margin-bottom: 8px;
+}
+
+.sector-row {
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  padding: 8px 16px;
+  border-radius: 6px;
+  width: 140px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.text-success { color: var(--color-success); }
+.text-danger { color: var(--color-danger); }
+
+/* ── Post Race Stats ───────────────────────────────────────── */
+
+.stats-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.post-race-card {
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  width: 500px;
+  padding: 40px;
+  border-radius: 32px;
+  text-align: center;
+  box-shadow: var(--shadow-premium);
+  animation: slide-up 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.podium-badge {
+  display: inline-block;
+  padding: 6px 16px;
+  background: var(--color-primary);
+  color: black;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  margin-bottom: 20px;
+}
+
+.finish-pos {
+  font-family: var(--font-branding);
+  font-size: 120px;
+  font-weight: 900;
+  line-height: 1;
+  margin-bottom: 8px;
+  background: linear-gradient(to bottom, #fff, rgba(255, 255, 255, 0.3));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.finish-pos span { font-size: 40px; }
+
+.track-title {
+  font-family: var(--font-branding);
+  font-size: 24px;
+  letter-spacing: 1px;
+  margin-bottom: 32px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.stat-box {
+  background: rgba(255, 255, 255, 0.03);
+  padding: 20px;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-box .label { font-size: 10px; color: rgba(255, 255, 255, 0.4); font-weight: 800; }
+.stat-box .val { font-family: var(--font-branding); font-size: 20px; font-weight: 800; }
+
+.progression-section {
+  text-align: left;
+  margin-bottom: 32px;
+}
+
+.prog-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px; font-weight: 700; }
+.prog-row .gain { color: var(--color-success); }
+
+.prog-bar { width: 100%; height: 6px; background: rgba(255, 255, 255, 0.1); border-radius: 3px; overflow: hidden; margin-bottom: 20px; }
+.prog-bar .fill { height: 100%; background: var(--color-primary); }
+
+.rating-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.rating-item { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; }
+.rating-item .pos { color: var(--color-success); }
+.rating-item .neg { color: var(--color-danger); }
+
+.continue-btn { width: 100% !important; padding: 16px !important; border-radius: 12px !important; }
+
+/* ── Menu Overlay ─────────────────────────────────────────── */
+
+.menu-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at center, rgba(0, 229, 255, 0.05), transparent 70%);
+}
+
+.tt-menu-card {
+  background: var(--bg-glass);
+  backdrop-filter: blur(30px);
+  border: 1px solid var(--border-glass);
+  width: 440px;
+  border-radius: 24px;
+  box-shadow: var(--shadow-premium);
+  overflow: hidden;
+  animation: scale-up 0.4s ease-out;
+}
+
+.menu-header {
+  padding: 32px;
+  background: rgba(255, 255, 255, 0.02);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.menu-header h2 { font-family: var(--font-branding); margin: 0; font-size: 24px; letter-spacing: 1px; }
+.menu-header p { margin: 4px 0 0; font-size: 13px; color: rgba(255, 255, 255, 0.4); font-weight: 500; }
+
+.close-btn { background: transparent; border: none; color: white; opacity: 0.5; cursor: pointer; }
+.close-btn:hover { opacity: 1; }
+
+.track-list { padding: 16px; display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto; }
+
+.track-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.track-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateX(4px);
+}
+
+.track-icon { width: 40px; height: 40px; background: rgba(0, 229, 255, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--color-primary); }
+
+.track-info { display: flex; flex-direction: column; flex: 1; }
+.track-info .name { font-weight: 700; font-size: 15px; }
+.track-info .type { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: rgba(255, 255, 255, 0.3); }
+
+/* ── Animations ────────────────────────────────────────────── */
+
+@keyframes scale-up {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
