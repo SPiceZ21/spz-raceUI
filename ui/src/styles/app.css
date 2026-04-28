@@ -8,6 +8,9 @@
   --color-warning: #ffaa00;
   --font-main: 'Inter', sans-serif;
   --font-branding: 'Outfit', sans-serif;
+  --bg-glass: rgba(15, 15, 15, 0.75);
+  --border-glass: rgba(255, 255, 255, 0.1);
+  --shadow-premium: 0 20px 50px rgba(0, 0, 0, 0.5);
 }
 
 body {
@@ -18,6 +21,17 @@ body {
 
 #root {
   background: transparent !important;
+}
+
+/* ── Overlays (Menu / Stats) ──────────────────────────────── */
+
+.menu-overlay, .stats-overlay {
+  position: absolute; inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: all;
+  z-index: 100;
 }
 
 /* ── HUD Layout ───────────────────────────────────────────── */
@@ -68,13 +82,13 @@ body {
 .name { font-size: 12px; font-weight: 700; text-transform: uppercase; }
 .gap { font-size: 9px; color: rgba(255,255,255,0.4); font-weight: 600; }
 
-/* ── Telemetry (Top Right - USER REQUEST) ─────────────────── */
+/* ── Telemetry (Top Right) ───────────────────────────────── */
 
 .telemetry-hud {
   position: absolute; top: 40px; right: 120px;
   width: 320px;
   display: flex; flex-direction: column; gap: 8px;
-  background: transparent !important; /* NO BG */
+  background: transparent !important;
   text-align: right;
 }
 
@@ -89,7 +103,7 @@ body {
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   gap: 15px;
 }
 
@@ -126,20 +140,106 @@ body {
 
 .telemetry-bottom { display: flex; justify-content: flex-end; }
 
-/* ── Overlays (Menu / Stats) ──────────────────────────────── */
+/* ── Menu UI (Time Trial) ────────────────────────────────── */
 
-.menu-overlay, .stats-overlay {
-  position: absolute; inset: 0;
-  background: rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(8px);
-  display: flex; align-items: center; justify-content: center;
-  pointer-events: all;
+.tt-menu-card {
+  width: 450px;
+  max-height: 80vh;
+  background: var(--bg-glass) !important;
+  backdrop-filter: blur(25px);
+  border: 1px solid var(--border-glass);
+  padding: 30px;
+  border-radius: 24px;
+  box-shadow: var(--shadow-premium);
+  display: flex;
+  flex-direction: column;
 }
 
-.tt-menu-card, .post-race-card {
-  background: rgba(15, 15, 15, 0.9) !important;
-  border: 1px solid rgba(255,255,255,0.1);
-  box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+.menu-header-desc { font-size: 13px; opacity: 0.5; margin-bottom: 20px; }
+
+.track-list {
+  overflow-y: auto;
+  padding-right: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.track-item {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.05);
+  padding: 16px 20px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.track-item:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: var(--color-primary);
+  transform: translateX(5px);
+}
+
+.track-info { display: flex; flex-direction: column; gap: 2px; }
+.track-info .name { font-weight: 700; font-size: 14px; text-transform: uppercase; }
+.track-info .type { font-size: 10px; opacity: 0.4; font-weight: 700; letter-spacing: 1px; }
+
+/* ── Post-Race Stats ─────────────────────────────────────── */
+
+.post-race-card { 
+  width: 480px; 
+  background: var(--bg-glass) !important;
+  backdrop-filter: blur(25px);
+  border: 1px solid var(--border-glass);
+  padding: 40px;
+  border-radius: 32px;
+  text-align: center;
+  box-shadow: var(--shadow-premium);
+}
+
+.podium-badge { 
+  font-family: var(--font-branding);
+  font-size: 12px; font-weight: 800; color: var(--color-primary); 
+  letter-spacing: 3px; margin-bottom: 12px; 
+}
+
+.finish-pos { 
+  font-family: var(--font-branding); 
+  font-size: 120px; font-weight: 900; line-height: 1; 
+  background: linear-gradient(to bottom, #fff, rgba(255, 255, 255, 0.3));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.finish-pos span { font-size: 40px; opacity: 0.5; margin-left: -5px; -webkit-text-fill-color: rgba(255,255,255,0.5); }
+
+.track-title { 
+  font-family: var(--font-branding);
+  font-size: 24px; font-weight: 800; margin: 8px 0 32px; 
+  opacity: 0.9; 
+}
+
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px; }
+.stat-item { background: rgba(255,255,255,0.03); padding: 20px; border-radius: 16px; display: flex; flex-direction: column; gap: 4px; border: 1px solid rgba(255,255,255,0.05); }
+.stat-item .label { font-size: 10px; opacity: 0.4; font-weight: 800; letter-spacing: 1px; }
+.stat-item .val { font-family: var(--font-branding); font-size: 22px; font-weight: 800; }
+
+.progression { text-align: left; padding: 0 10px; }
+.progression .row { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; margin-bottom: 8px; }
+.progression .gain { color: var(--color-success); }
+.progression .loss { color: var(--color-danger); }
+.progression .bar { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
+.progression .fill { height: 100%; background: var(--color-primary); }
+
+.stats-btn {
+  font-family: var(--font-branding) !important;
+  font-weight: 800 !important;
+  letter-spacing: 1px !important;
+  border-radius: 12px !important;
+  padding: 18px !important;
+  margin-top: 32px;
 }
 
 /* ── Countdown ─────────────────────────────────────────────── */
@@ -152,3 +252,9 @@ body {
   text-shadow: 0 10px 40px rgba(0,0,0,0.5);
 }
 .countdown-box.is-go { color: var(--color-success); font-size: 180px; }
+
+/* ── Scrollbar ─────────────────────────────────────────────── */
+*::-webkit-scrollbar { width: 4px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+*::-webkit-scrollbar-thumb:hover { background: var(--color-primary); }
