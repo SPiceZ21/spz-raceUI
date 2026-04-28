@@ -130,8 +130,8 @@ body {
 
 .menu-overlay, .stats-overlay {
   position: absolute; inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(15px);
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(8px);
   display: flex; align-items: center; justify-content: center;
   pointer-events: all;
 }
