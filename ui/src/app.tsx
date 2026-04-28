@@ -61,7 +61,7 @@ interface RaceOverlayData {
 
 const Standings = ({ positions, mySource }: { positions: RacerEntry[], mySource?: number }) => (
   <div className="standings-list">
-    {positions.map(r => {
+    {(positions || []).map(r => {
       const isMe = r.source === mySource
       return (
         <div key={r.source} className={`racer-card ${isMe ? 'is-me' : ''}`}>
@@ -160,7 +160,6 @@ export function App() {
           setCountdown(data)
           setView('countdown')
           
-          // Sync totals to overlay state early
           if (data.laps || data.totalCheckpoints) {
             setOverlay(prev => ({
               ...prev,
@@ -172,7 +171,7 @@ export function App() {
 
           if (data.isGo) {
             setTimeout(() => setView('none'), 1500)
-            setView('overlay') // Force switch to overlay on GO
+            setView('overlay')
           }
           break
 
@@ -180,14 +179,21 @@ export function App() {
           if (data.visible === false) {
             setView('none')
           } else {
-            const myEntry = data.positions?.find((r: any) => r.source === data.mySource)
-            setOverlay(prev => ({ 
-              ...prev, 
-              ...data, 
-              myPosition: myEntry?.position || data.myPosition || prev.myPosition,
-              totalLaps: data.totalLaps || prev.totalLaps,
-              totalCheckpoints: data.totalCheckpoints || prev.totalCheckpoints
-            }))
+            setOverlay(prev => {
+              const myEntry = data.positions?.find((r: any) => r.source === data.mySource || r.source === prev.mySource)
+              return { 
+                ...prev, 
+                ...data,
+                positions: data.positions || prev.positions,
+                mySource: data.mySource || prev.mySource,
+                myPosition: myEntry?.position || data.myPosition || prev.myPosition,
+                totalLaps: data.totalLaps || prev.totalLaps,
+                totalCheckpoints: data.totalCheckpoints || prev.totalCheckpoints,
+                lapNum: data.lapNum || prev.lapNum,
+                checkpoint: data.checkpoint || prev.checkpoint,
+                currentLapTime: data.currentLapTime !== undefined ? data.currentLapTime : prev.currentLapTime
+              }
+            })
             setView('overlay')
           }
           break
@@ -263,7 +269,7 @@ export function App() {
   }, [])
 
   return (
-    <div className="nui-root">
+    <div className="nui-root" style={{ background: 'transparent' }}>
       {view === 'countdown' && (
         <div className="countdown-container">
           <div className={`countdown-box ${countdown.isGo ? 'is-go' : ''}`}>
