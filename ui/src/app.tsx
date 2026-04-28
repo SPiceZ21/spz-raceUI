@@ -39,14 +39,7 @@ interface RacerEntry {
   position: number
   gap?: string
   avatar?: string
-  license?: string
   licenseClass?: string
-}
-
-interface SectorTime {
-  id: number
-  time: number
-  delta?: number
 }
 
 interface RaceOverlayData {
@@ -54,24 +47,16 @@ interface RaceOverlayData {
   positions?: RacerEntry[]
   mySource?: number
   lapNum?: number
-  totalLaps?: number
+  totalLaps?: number | string
   checkpoint?: number
-  totalCheckpoints?: number
-  bestLapTime?: number
-  currentLapTime?: number
+  totalCheckpoints?: number | string
+  bestLapTime?: any
+  currentLapTime?: any
+  formattedTime?: string
   delta?: number
-  sectors?: SectorTime[]
 }
 
 /* ── HUD Components ────────────────────────────────────────── */
-
-const Countdown = ({ data }: { data: any }) => (
-  <div className="countdown-container">
-    <div className={`countdown-box ${data.isGo ? 'is-go' : ''}`}>
-      {data.isGo ? 'GO!' : data.number}
-    </div>
-  </div>
-)
 
 const Standings = ({ positions, mySource }: { positions: RacerEntry[], mySource?: number }) => (
   <div className="standings-list">
@@ -99,8 +84,13 @@ const Standings = ({ positions, mySource }: { positions: RacerEntry[], mySource?
 )
 
 const Telemetry = ({ data }: { data: RaceOverlayData }) => {
-  const cpProgress = data.totalCheckpoints ? ((data.checkpoint || 1) / data.totalCheckpoints) * 100 : 0
+  const cpProgress = (typeof data.totalCheckpoints === 'number' && data.totalCheckpoints > 0) 
+    ? ((data.checkpoint || 1) / data.totalCheckpoints) * 100 
+    : 0
   
+  const displayTime = data.formattedTime || formatTime(data.currentLapTime || 0)
+  const displayBest = typeof data.bestLapTime === 'string' ? data.bestLapTime : formatTime(data.bestLapTime || 0)
+
   return (
     <div className="telemetry-hud">
       <div className="telemetry-top">
@@ -115,7 +105,7 @@ const Telemetry = ({ data }: { data: RaceOverlayData }) => {
       </div>
 
       <div className="timer-main">
-        <div className="lap-timer">{formatTime(data.currentLapTime || 0)}</div>
+        <div className="lap-timer">{displayTime}</div>
         {data.delta !== undefined && (
           <div className={`delta-tag ${data.delta <= 0 ? 'faster' : 'slower'}`}>
             {data.delta <= 0 ? <TrendingDown size={10} /> : <TrendingUp size={10} />}
@@ -130,7 +120,7 @@ const Telemetry = ({ data }: { data: RaceOverlayData }) => {
 
       <div className="telemetry-bottom">
          <Badge variant="warning" size="sm">
-           <Trophy size={10} style={{marginRight: 4}}/> BEST: {formatTime(data.bestLapTime || 0)}
+           <Trophy size={10} style={{marginRight: 4}}/> BEST: {displayBest}
          </Badge>
       </div>
     </div>
@@ -166,6 +156,49 @@ export function App() {
           }
           break
 
+        // Time Trial Specific Handlers
+        case 'tt_timer':
+          setOverlay(prev => ({ ...prev, formattedTime: data.formatted }))
+          setView('overlay')
+          break
+
+        case 'tt_hud_show':
+          setOverlay({
+            lapNum: 1,
+            totalLaps: data.lapTotal || '?',
+            checkpoint: data.cpIndex || 1,
+            totalCheckpoints: data.cpTotal || '?',
+            bestLapTime: data.bestLap || 0,
+            formattedTime: '00:00.000'
+          })
+          setView('overlay')
+          break
+
+        case 'tt_lap_started':
+          setOverlay(prev => ({ 
+            ...prev, 
+            lapNum: data.lap, 
+            bestLapTime: data.bestLap || prev.bestLapTime 
+          }))
+          break
+
+        case 'tt_next_cp':
+          setOverlay(prev => ({ 
+            ...prev, 
+            checkpoint: data.cpIndex, 
+            totalCheckpoints: data.total || prev.totalCheckpoints 
+          }))
+          break
+
+        case 'tt_lap_complete':
+          setOverlay(prev => ({ 
+            ...prev, 
+            bestLapTime: data.bestLap,
+            lapNum: data.lapNum + 1,
+            checkpoint: 1
+          }))
+          break
+
         case 'postRaceStats':
           setPostRace(data)
           setView('poststats')
@@ -191,7 +224,13 @@ export function App() {
 
   return (
     <div className="nui-root">
-      {view === 'countdown' && <Countdown data={countdown} />}
+      {view === 'countdown' && (
+        <div className="countdown-container">
+          <div className={`countdown-box ${countdown.isGo ? 'is-go' : ''}`}>
+            {countdown.isGo ? 'GO!' : countdown.number}
+          </div>
+        </div>
+      )}
       
       {view === 'overlay' && (
         <div className="hud-layer">
