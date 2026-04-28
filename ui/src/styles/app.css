@@ -19,8 +19,11 @@ body {
   background: transparent !important;
 }
 
-#root {
+#root, .nui-root {
   background: transparent !important;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
 }
 
 /* ── Overlays (Menu / Stats) ──────────────────────────────── */
