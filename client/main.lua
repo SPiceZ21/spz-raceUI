@@ -83,12 +83,12 @@ Citizen.CreateThread(function()
     while true do
         if isRacing and isRaceOverlayVisible then
             SendNUIMessage({
-                action = 'raceOverlay',
+                action = 'race_timer',
                 data = {
-                    currentLapTime = GetGameTimer() - lapStartTime
+                    time = GetGameTimer() - lapStartTime
                 }
             })
-            Citizen.Wait(50)
+            Citizen.Wait(100) -- Stable 10Hz update
         else
             Citizen.Wait(500)
         end
@@ -116,6 +116,7 @@ end
 
 local function ShowPostRaceStats(data)
     isRacing = false
+    SetNuiFocus(true, true)
     SendNUIMessage({
         action = 'postRaceStats',
         data = data
