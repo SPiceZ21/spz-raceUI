@@ -27,7 +27,7 @@ function formatTime(ms: number) {
   if (!ms || ms === 0) return "00:00.000"
   const m = Math.floor(ms / 60000)
   const s = Math.floor((ms % 60000) / 1000)
-  const t = ms % 1000
+  const t = Math.floor(ms % 1000)
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}.${t.toString().padStart(3, '0')}`
 }
 
@@ -142,6 +142,10 @@ export function App() {
   const [postRace, setPostRace]     = useState<any>(null)
   const [autoClose, setAutoClose]   = useState(12)
   const autoCloseRef = useRef<any>(null)
+  
+  // Use a ref to keep track of the absolute latest overlay data without triggering re-renders
+  // this prevents the timer updates from losing context of the laps/checkpoints
+  const overlayRef = useRef<RaceOverlayData>({})
 
   const dismissStats = () => {
     if (autoCloseRef.current) clearInterval(autoCloseRef.current)
@@ -161,12 +165,14 @@ export function App() {
           setView('countdown')
           
           if (data.laps || data.totalCheckpoints) {
-            setOverlay(prev => ({
-              ...prev,
-              totalLaps: data.laps || prev.totalLaps,
-              totalCheckpoints: data.totalCheckpoints || prev.totalCheckpoints,
-              myPosition: data.gridPos || prev.myPosition
-            }))
+            const next = {
+              ...overlayRef.current,
+              totalLaps: data.laps || overlayRef.current.totalLaps,
+              totalCheckpoints: data.totalCheckpoints || overlayRef.current.totalCheckpoints,
+              myPosition: data.gridPos || overlayRef.current.myPosition
+            }
+            overlayRef.current = next
+            setOverlay(next)
           }
 
           if (data.isGo) {
@@ -179,32 +185,34 @@ export function App() {
           if (data.visible === false) {
             setView('none')
           } else {
-            setOverlay(prev => {
-              const myEntry = data.positions?.find((r: any) => r.source === data.mySource || r.source === prev.mySource)
-              return { 
-                ...prev, 
-                ...data,
-                positions: data.positions || prev.positions,
-                mySource: data.mySource || prev.mySource,
-                myPosition: myEntry?.position || data.myPosition || prev.myPosition,
-                totalLaps: data.totalLaps || prev.totalLaps,
-                totalCheckpoints: data.totalCheckpoints || prev.totalCheckpoints,
-                lapNum: data.lapNum || prev.lapNum,
-                checkpoint: data.checkpoint || prev.checkpoint,
-                currentLapTime: data.currentLapTime !== undefined ? data.currentLapTime : prev.currentLapTime
-              }
-            })
+            const myEntry = data.positions?.find((r: any) => r.source === data.mySource || r.source === overlayRef.current.mySource)
+            const next = { 
+              ...overlayRef.current, 
+              ...data,
+              positions: data.positions || overlayRef.current.positions,
+              mySource: data.mySource || overlayRef.current.mySource,
+              myPosition: myEntry?.position || data.myPosition || overlayRef.current.myPosition,
+              totalLaps: data.totalLaps || overlayRef.current.totalLaps,
+              totalCheckpoints: data.totalCheckpoints || overlayRef.current.totalCheckpoints,
+              lapNum: data.lapNum || overlayRef.current.lapNum,
+              checkpoint: data.checkpoint || overlayRef.current.checkpoint,
+              currentLapTime: data.currentLapTime !== undefined ? data.currentLapTime : overlayRef.current.currentLapTime
+            }
+            overlayRef.current = next
+            setOverlay(next)
             setView('overlay')
           }
           break
 
         case 'tt_timer':
-          setOverlay(prev => ({ ...prev, formattedTime: data.formatted }))
+          const ttNext = { ...overlayRef.current, formattedTime: data.formatted }
+          overlayRef.current = ttNext
+          setOverlay(ttNext)
           setView('overlay')
           break
 
         case 'tt_hud_show':
-          setOverlay({
+          const ttHud = {
             lapNum: 1,
             totalLaps: '∞',
             checkpoint: data.cpIndex || 1,
@@ -212,24 +220,30 @@ export function App() {
             bestLapTime: data.bestLap || 0,
             formattedTime: '00:00.000',
             myPosition: 'TT'
-          })
+          }
+          overlayRef.current = ttHud
+          setOverlay(ttHud)
           setView('overlay')
           break
 
         case 'tt_lap_started':
-          setOverlay(prev => ({ 
-            ...prev, 
+          const lapStart = { 
+            ...overlayRef.current, 
             lapNum: data.lap, 
-            bestLapTime: data.bestLap || prev.bestLapTime 
-          }))
+            bestLapTime: data.bestLap || overlayRef.current.bestLapTime 
+          }
+          overlayRef.current = lapStart
+          setOverlay(lapStart)
           break
 
         case 'tt_next_cp':
-          setOverlay(prev => ({ 
-            ...prev, 
+          const nextCp = { 
+            ...overlayRef.current, 
             checkpoint: data.cpIndex, 
-            totalCheckpoints: data.total || prev.totalCheckpoints 
-          }))
+            totalCheckpoints: data.total || overlayRef.current.totalCheckpoints 
+          }
+          overlayRef.current = nextCp
+          setOverlay(nextCp)
           break
 
         case 'postRaceStats':
@@ -269,7 +283,7 @@ export function App() {
   }, [])
 
   return (
-    <div className="nui-root" style={{ background: 'transparent' }}>
+    <div className="nui-root" style={{ background: 'transparent !important' }}>
       {view === 'countdown' && (
         <div className="countdown-container">
           <div className={`countdown-box ${countdown.isGo ? 'is-go' : ''}`}>
@@ -290,7 +304,7 @@ export function App() {
           <Card title="TIME TRIALS" className="tt-menu-card">
             <div className="menu-header-desc">Select a circuit to begin practice</div>
             <div className="track-list">
-              {ttMenu.map((t, i) => (
+              {ttMenu.map((t: any, i: number) => (
                 <div key={i} className="track-item" onClick={() => post('tt_selectTrack', { index: t.index || i + 1 })}>
                   <div className="track-info">
                     <span className="name">{t.name}</span>
