@@ -1,5 +1,6 @@
 import { render } from 'preact'
 import { App } from './app'
+import './styles/fonts.css'
 import './styles/nui-base.css'
 import './styles/app.css'
 
