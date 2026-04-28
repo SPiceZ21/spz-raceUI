@@ -11,7 +11,7 @@ import {
 import { Button } from './components/Button'
 import { Card } from './components/Card'
 import { Badge } from './components/Badge'
-import './app.css'
+import './styles/app.css'
 
 const RESOURCE = GetParentResourceName()
 
