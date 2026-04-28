@@ -1,0 +1,287 @@
+/* spz-raceUI — race overlay + countdown + post-race stats */
+#root { pointer-events: auto; }
+
+/* ── Countdown ────────────────────────────────────────────── */
+.countdown-root {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.countdown-number {
+  font-family: var(--font-primary);
+  font-weight: 800;
+  font-size: 200px;
+  line-height: 1;
+  color: var(--gray-50);
+  text-shadow: 0 0 60px rgba(255, 98, 0, 0.6);
+  animation: cd-pop 300ms var(--anim-ease);
+}
+
+.countdown-go {
+  font-family: var(--font-primary);
+  font-weight: 800;
+  font-size: 120px;
+  color: var(--color-primary);
+  text-shadow: 0 0 80px rgba(255, 98, 0, 0.8);
+  animation: cd-pop 300ms var(--anim-ease);
+}
+
+.countdown-meta {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gray-500);
+}
+
+@keyframes cd-pop {
+  from { transform: scale(1.3); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+/* ── Race overlay (standings) ──────────────────────────────── */
+.race-overlay {
+  position: fixed;
+  top: 10vh;
+  left: 2vw;
+  pointer-events: none;
+}
+
+.race-standings {
+  width: 260px;
+  background: rgba(10, 10, 10, 0.85);
+  border: 1px solid var(--gray-800);
+  border-radius: 8px;
+  overflow: hidden;
+  backdrop-filter: blur(8px);
+}
+
+.race-standings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: var(--gray-800);
+  border-bottom: 1px solid var(--gray-700);
+}
+
+.race-standings-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gray-400);
+}
+
+.racer-row {
+  display: flex;
+  align-items: center;
+  padding: 7px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  gap: 8px;
+  transition: background 150ms;
+}
+
+.racer-row.is-me {
+  background: rgba(255, 98, 0, 0.08);
+  border-left: 2px solid var(--color-primary);
+}
+
+.racer-pos {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gray-500);
+  width: 18px;
+  text-align: center;
+}
+
+.racer-pos.p1 { color: #FFD700; }
+.racer-pos.p2 { color: #C0C0C0; }
+.racer-pos.p3 { color: #CD7F32; }
+
+.racer-name {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--gray-200);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.racer-name.is-me { color: var(--color-primary); font-weight: 700; }
+
+.racer-gap {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--gray-500);
+}
+
+.race-lap-bar {
+  padding: 6px 12px;
+  border-top: 1px solid var(--gray-800);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.race-lap-text {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--gray-400);
+}
+
+/* ── Post-race stats card ──────────────────────────────────── */
+.stats-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(6px);
+  pointer-events: auto;
+}
+
+.stats-card {
+  width: 440px;
+  background: var(--gray-900);
+  border: 1px solid var(--gray-800);
+  border-radius: 8px;
+  overflow: hidden;
+  animation: spz-in 400ms var(--anim-ease);
+}
+
+.stats-hero {
+  padding: 24px;
+  text-align: center;
+  background: var(--gray-800);
+  border-bottom: 1px solid var(--gray-700);
+}
+
+.stats-position {
+  font-family: var(--font-primary);
+  font-weight: 800;
+  font-size: 64px;
+  color: var(--gray-50);
+  line-height: 1;
+}
+
+.stats-position-suffix {
+  font-family: var(--font-primary);
+  font-size: 28px;
+  color: var(--color-primary);
+  vertical-align: super;
+}
+
+.stats-track {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gray-500);
+  margin-top: 4px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--gray-800);
+  border-bottom: 1px solid var(--gray-800);
+}
+
+.stats-cell {
+  padding: 16px 20px;
+  background: var(--gray-900);
+}
+
+.stats-cell-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gray-500);
+  margin-bottom: 4px;
+}
+
+.stats-cell-val {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--gray-50);
+}
+
+.stats-cell-val.positive { color: #29D398; }
+.stats-cell-val.negative { color: #F87171; }
+
+.stats-rating-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--gray-800);
+}
+
+.stats-rating-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.stats-rating-delta {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.stats-rating-delta.pos { color: #29D398; }
+.stats-rating-delta.neg { color: #F87171; }
+
+.xp-bar-wrap {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--gray-800);
+}
+
+.xp-bar-label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--gray-400);
+}
+
+.xp-bar-track {
+  height: 6px;
+  background: var(--gray-800);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.xp-bar-fill {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 9999px;
+  transition: width 1.2s ease;
+}
+
+.stats-footer {
+  padding: 16px 20px;
+  display: flex;
+  justify-content: flex-end;
+}
