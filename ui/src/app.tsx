@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'preact/hooks'
+import { useState, useEffect, useRef } from 'preact/hooks'
 import { 
   Trophy, 
   Flag, 
@@ -6,7 +6,8 @@ import {
   Layout, 
   TrendingUp, 
   TrendingDown,
-  Navigation
+  X,
+  Timer
 } from 'lucide-preact'
 import { Button } from './components/Button'
 import { Card } from './components/Card'
@@ -140,6 +141,15 @@ export function App() {
   const [overlay, setOverlay]       = useState<RaceOverlayData>({})
   const [ttMenu, setTTMenu]         = useState<any[]>([])
   const [postRace, setPostRace]     = useState<any>(null)
+  const [autoClose, setAutoClose]   = useState(10)
+  const autoCloseRef = useRef<any>(null)
+
+  const dismissStats = () => {
+    if (autoCloseRef.current) clearInterval(autoCloseRef.current)
+    post('tt_dismissResults')
+    setView('none')
+    setPostRace(null)
+  }
 
   useEffect(() => {
     const handler = (e: MessageEvent) => {
@@ -184,34 +194,21 @@ export function App() {
           setView('overlay')
           break
 
-        case 'tt_lap_started':
-          setOverlay(prev => ({ 
-            ...prev, 
-            lapNum: data.lap, 
-            bestLapTime: data.bestLap || prev.bestLapTime 
-          }))
-          break
-
-        case 'tt_next_cp':
-          setOverlay(prev => ({ 
-            ...prev, 
-            checkpoint: data.cpIndex, 
-            totalCheckpoints: data.total || prev.totalCheckpoints 
-          }))
-          break
-
-        case 'tt_lap_complete':
-          setOverlay(prev => ({ 
-            ...prev, 
-            bestLapTime: data.bestLap,
-            lapNum: (data.lapNum || data.lap || 1) + 1,
-            checkpoint: 1
-          }))
-          break
-
         case 'postRaceStats':
           setPostRace(data)
+          setAutoClose(12)
           setView('poststats')
+          
+          if (autoCloseRef.current) clearInterval(autoCloseRef.current)
+          autoCloseRef.current = setInterval(() => {
+            setAutoClose(prev => {
+              if (prev <= 1) {
+                dismissStats()
+                return 0
+              }
+              return prev - 1
+            })
+          }, 1000)
           break
 
         case 'tt_open_menu':
@@ -221,12 +218,16 @@ export function App() {
 
         case 'tt_hide':
         case 'hideAll':
+          if (autoCloseRef.current) clearInterval(autoCloseRef.current)
           setView('none')
           break
       }
     }
     window.addEventListener('message', handler)
-    return () => window.removeEventListener('message', handler)
+    return () => {
+      window.removeEventListener('message', handler)
+      if (autoCloseRef.current) clearInterval(autoCloseRef.current)
+    }
   }, [])
 
   return (
@@ -268,23 +269,46 @@ export function App() {
 
       {view === 'poststats' && postRace && (
         <div className="stats-overlay">
-          <Card className="post-race-card">
+          <div className="post-race-card">
              <div className="podium-badge">RACE COMPLETE</div>
-             <div className="finish-pos">{postRace.position}<span>{postRace.position === 1 ? 'ST' : postRace.position === 2 ? 'ND' : 'RD'}</span></div>
+             <div className="finish-pos">
+               {postRace.position}
+               <span>{postRace.position === 1 ? 'ST' : postRace.position === 2 ? 'ND' : 'RD'}</span>
+             </div>
              <div className="track-title">{postRace.trackName}</div>
              
              <div className="stats-grid">
-               <div className="stat-item"><span className="label">FINISH TIME</span><span className="val">{postRace.finishTime}</span></div>
-               <div className="stat-item"><span className="label">BEST LAP</span><span className="val">{postRace.bestLap}</span></div>
+               <div className="stat-item">
+                 <span className="label">FINISH TIME</span>
+                 <span className="val">{postRace.finishTime}</span>
+               </div>
+               <div className="stat-item">
+                 <span className="label">BEST LAP</span>
+                 <span className="val">{postRace.bestLap}</span>
+               </div>
              </div>
 
              <div className="progression">
-               <div className="row"><span>XP GAINED</span><span className="gain">+{postRace.xpGained}</span></div>
-               <div className="bar"><div className="fill" style={{width: `${(postRace.xpNewProgress || 0) * 100}%`}}/></div>
+               <div className="row">
+                 <span>XP GAINED</span>
+                 <span className="gain">+{postRace.xpGained || 0}</span>
+               </div>
+               <div className="bar">
+                 <div className="fill" style={{width: `${(postRace.xpNewProgress || 0) * 100}%`}}/>
+               </div>
+               
+               <div className="row mt-8">
+                 <span>iRATING DELTA</span>
+                 <span className={postRace.iRatingDelta >= 0 ? 'gain' : 'loss'}>
+                   {postRace.iRatingDelta >= 0 ? '+' : ''}{postRace.iRatingDelta || 0}
+                 </span>
+               </div>
              </div>
 
-             <Button className="w-full mt-24" onClick={() => post('dismissStats')}>CONTINUE</Button>
-          </Card>
+             <Button variant="primary" className="w-full mt-32 stats-btn" onClick={dismissStats}>
+               CONTINUE ({autoClose}s)
+             </Button>
+          </div>
         </div>
       )}
     </div>
