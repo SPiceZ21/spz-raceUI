@@ -88,7 +88,7 @@ body {
 .standings-list {
   position: absolute;
   top: 32px;
-  left: 32px;
+  left: 20px;
   width: 270px;
   display: flex;
   flex-direction: column;
@@ -144,7 +144,7 @@ body {
 .telemetry-hud {
   position: absolute;
   top: 32px;
-  right: 32px;
+  right: 56px;
   width: 340px;
   display: flex;
   flex-direction: column;
