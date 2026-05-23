@@ -10,7 +10,8 @@ local hudCache = {
     checkpoint = 1,
     totalCheckpoints = '?',
     myPosition = '1',
-    bestLapTime = 0
+    bestLapTime = 0,
+    allTimeBest = 0
 }
 
 ---@param data table { number: number, isGo: boolean, track: string, class: string, laps: number, gridPos: number, total: number }
@@ -31,8 +32,16 @@ local function ShowCountdown(data)
     })
 end
 
----@param data table { positions: table, mySource: number, lapNum: number, totalLaps: number, checkpoint: number, totalCheckpoints: number, bestLapTime: number, resetTimer: boolean }
+---@param data table { positions: table, mySource: number, lapNum: number, totalLaps: number, checkpoint: number, totalCheckpoints: number, bestLapTime: number, allTimeBest: number, resetTimer: boolean }
 local function UpdateRaceOverlay(data)
+    -- Update cache first regardless of visibility so we don't miss initialization telemetry
+    if data.lapNum then hudCache.lapNum = data.lapNum end
+    if data.totalLaps then hudCache.totalLaps = data.totalLaps end
+    if data.checkpoint then hudCache.checkpoint = data.checkpoint end
+    if data.totalCheckpoints then hudCache.totalCheckpoints = data.totalCheckpoints end
+    if data.bestLapTime then hudCache.bestLapTime = data.bestLapTime end
+    if data.allTimeBest then hudCache.allTimeBest = data.allTimeBest end
+
     if not isRaceOverlayVisible then return end
     
     if data.positions then
@@ -50,13 +59,6 @@ local function UpdateRaceOverlay(data)
         end
     end
 
-    -- Update cache
-    if data.lapNum then hudCache.lapNum = data.lapNum end
-    if data.totalLaps then hudCache.totalLaps = data.totalLaps end
-    if data.checkpoint then hudCache.checkpoint = data.checkpoint end
-    if data.totalCheckpoints then hudCache.totalCheckpoints = data.totalCheckpoints end
-    if data.bestLapTime then hudCache.bestLapTime = data.bestLapTime end
-
     if data.resetTimer then
         lapStartTime = GetGameTimer()
     end
@@ -72,6 +74,7 @@ local function UpdateRaceOverlay(data)
             checkpoint = hudCache.checkpoint,
             totalCheckpoints = hudCache.totalCheckpoints,
             bestLapTime = hudCache.bestLapTime,
+            allTimeBest = hudCache.allTimeBest,
             myPosition = hudCache.myPosition,
             currentLapTime = isRacing and (GetGameTimer() - lapStartTime) or 0
         }

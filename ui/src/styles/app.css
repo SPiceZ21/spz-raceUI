@@ -88,63 +88,107 @@ body {
 .standings-list {
   position: absolute;
   top: 32px;
-  left: 20px;
-  width: 270px;
+  left: 24px;
+  width: 290px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
-}
-
-.racer-card {
-  background: rgba(6, 6, 10, 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-left: 2px solid rgba(255, 255, 255, 0.12);
-  border-radius: 6px;
-  padding: 6px 10px;
-  display: flex;
-  align-items: center;
   gap: 8px;
 }
 
+.racer-card {
+  background: rgba(8, 8, 12, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-left: 3px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 .racer-card.is-me {
-  background: rgba(255, 102, 0, 0.12);
-  border-left: 2px solid var(--color-primary);
+  background: rgba(12, 10, 8, 0.95);
+  border-left: 3px solid var(--color-primary);
+  border-color: rgba(255, 102, 0, 0.25) rgba(255, 102, 0, 0.25) rgba(255, 102, 0, 0.25) var(--color-primary);
+  box-shadow: 0 4px 20px rgba(255, 102, 0, 0.15), 0 0 1px rgba(255, 102, 0, 0.2);
 }
 
 .racer-pos {
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 800;
-  width: 18px;
+  width: 20px;
   text-align: center;
-  opacity: 0.7;
+  color: rgba(255, 255, 255, 0.7);
   flex-shrink: 0;
 }
 
-.racer-pos .p1-icon { color: #FFD700; }
+.racer-pos .p1-icon {
+  color: #ffb700;
+  filter: drop-shadow(0 0 4px rgba(255, 183, 0, 0.5));
+}
 
 .racer-avatar {
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
   flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
+
+.racer-card.is-me .racer-avatar {
+  border-color: rgba(255, 102, 0, 0.4);
+}
+
 .racer-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
-.racer-details { flex: 1; min-width: 0; }
-.racer-top { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
-.racer-name { font-size: 11px; font-weight: 700; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.racer-name.is-me { color: var(--color-primary); }
-.racer-gap { font-size: 9px; color: rgba(255,255,255,0.4); font-weight: 600; margin-top: 1px; }
+.racer-details {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.racer-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+
+.racer-name {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #e5e5e5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.racer-name.is-me {
+  color: var(--color-primary);
+  font-weight: 900;
+}
+
+.racer-gap {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.45);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.racer-card.is-me .racer-gap {
+  color: rgba(255, 102, 0, 0.7);
+}
 
 /* ── Telemetry HUD (top right) ───────────────────────────── */
 
 .telemetry-hud {
   position: absolute;
   top: 32px;
-  right: 56px;
+  right: 90px;
   width: 340px;
   display: flex;
   flex-direction: column;
@@ -238,13 +282,34 @@ body {
   transition: width 200ms ease;
 }
 
+.best-laps-container {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 4px;
+}
+
 .best-tag {
   font-family: var(--font-display);
   font-size: 10px;
-  font-weight: 800;
-  color: var(--color-warning);
-  letter-spacing: 0.06em;
+  font-weight: 900;
+  letter-spacing: 0.05em;
   font-variant-numeric: tabular-nums;
+  background: rgba(8, 8, 12, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 4px 8px;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.best-tag.pb {
+  color: var(--color-warning);
+  border-color: rgba(255, 204, 0, 0.15);
+}
+
+.best-tag.tr {
+  color: var(--color-success);
+  border-color: rgba(0, 255, 157, 0.15);
 }
 
 /* ── KeyCap ──────────────────────────────────────────────── */
