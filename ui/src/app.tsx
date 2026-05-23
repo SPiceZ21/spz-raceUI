@@ -51,6 +51,7 @@ interface OverlayState {
   checkpoint?: number
   totalCheckpoints?: number
   bestLapTime?: any
+  allTimeBest?: any
   currentLapTime?: number
   formattedTime?: string
   delta?: number
@@ -90,7 +91,15 @@ const Telemetry = ({ data }: { data: OverlayState }) => {
   const totalCPs  = data.totalCheckpoints || 0
   const cpPct     = totalCPs > 0 ? ((data.checkpoint || 1) / totalCPs) * 100 : 0
   const displayTime = data.formattedTime || formatTime(data.currentLapTime || 0)
-  const displayBest = typeof data.bestLapTime === 'string' ? data.bestLapTime : formatTime(data.bestLapTime || 0)
+  
+  const displayBest = data.bestLapTime && data.bestLapTime > 0
+    ? (typeof data.bestLapTime === 'string' ? data.bestLapTime : formatTime(data.bestLapTime))
+    : '--:--.---'
+    
+  const displayAllTime = data.allTimeBest && data.allTimeBest > 0
+    ? (typeof data.allTimeBest === 'string' ? data.allTimeBest : formatTime(data.allTimeBest))
+    : '--:--.---'
+
   const posLabel  = data.myPosition || '1'
 
   return (
@@ -118,7 +127,10 @@ const Telemetry = ({ data }: { data: OverlayState }) => {
         <div class="cp-bar-fill" style={{ width: `${cpPct}%` }} />
       </div>
 
-      <div class="best-tag">⏱ BEST: {displayBest}</div>
+      <div class="best-laps-container">
+        <div class="best-tag pb">⏱ PB: {displayBest}</div>
+        <div class="best-tag tr">🏆 RECORD: {displayAllTime}</div>
+      </div>
     </div>
   )
 }
@@ -329,6 +341,9 @@ export function App() {
     // preserve totalCheckpoints across updates (only sent once on spawn)
     if (!patch.totalCheckpoints && overlayRef.current.totalCheckpoints) {
       next.totalCheckpoints = overlayRef.current.totalCheckpoints
+    }
+    if (!patch.allTimeBest && overlayRef.current.allTimeBest) {
+      next.allTimeBest = overlayRef.current.allTimeBest
     }
     overlayRef.current = next
     setOverlay({ ...next })
