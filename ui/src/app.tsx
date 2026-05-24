@@ -1,10 +1,14 @@
 import { useState, useEffect, useRef } from 'preact/hooks'
-import { Trophy, TrendingUp, TrendingDown, ChevronRight } from 'lucide-preact'
+import { Trophy, TrendingUp, TrendingDown, ChevronRight, Sparkles } from 'lucide-preact'
 import './styles/app.css'
 
-const RESOURCE = GetParentResourceName()
+const RESOURCE = typeof GetParentResourceName === 'undefined' ? 'spz-raceUI' : GetParentResourceName()
 
 function post(action: string, data: object = {}) {
+  if (typeof GetParentResourceName === 'undefined') {
+    console.log(`[Browser Preview] NUI Post to ${action}:`, data);
+    return;
+  }
   fetch(`https://${RESOURCE}/${action}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -114,13 +118,15 @@ const Telemetry = ({ data }: { data: OverlayState }) => {
           <span class="chip-label">POS</span>
           <span class="chip-val">{posLabel}</span>
         </div>
-        <div class="lap-timer">{displayTime}</div>
-        {data.delta !== undefined && (
-          <div class={`delta-tag ${data.delta <= 0 ? 'faster' : 'slower'}`}>
-            {data.delta <= 0 ? <TrendingDown size={10} /> : <TrendingUp size={10} />}
-            {data.delta <= 0 ? '' : '+'}{data.delta.toFixed(3)}
-          </div>
-        )}
+        <div class="timer-section">
+          <div class="lap-timer">{displayTime}</div>
+          {data.delta !== undefined && (
+            <div class={`delta-pill ${data.delta <= 0 ? 'faster' : 'slower'}`}>
+              {data.delta <= 0 ? <TrendingDown size={11} /> : <TrendingUp size={11} />}
+              <span>{data.delta <= 0 ? '' : '+'}{data.delta.toFixed(3)}</span>
+            </div>
+          )}
+        </div>
       </div>
 
       <div class="cp-bar">
@@ -211,25 +217,36 @@ const TTMenu = ({ tracks, onSelect, onClose }: {
 
 const PostRace = ({ data, autoClose, onDismiss }: { data: any, autoClose: number, onDismiss: () => void }) => {
   const pos     = data.position || 1
-  const suffix  = posSuffix(pos)
+  const suffix  = typeof pos === 'number' ? posSuffix(pos) : ''
   const iRDelta = data.iRatingDelta || 0
   const xpProg  = Math.min(1, Math.max(0, data.xpNewProgress || 0))
-  const srDelta = data.srDelta || 0
+  const cpProg  = Math.min(1, Math.max(0, data.cpNewProgress || 0))
+  const srDelta = data.safetyRatingDelta || 0
+  const level   = data.level || 1
+  const levelUp = data.levelUp || false
+
+  // Determine podium class for styling highlights
+  const podiumClass = typeof pos === 'number' && pos <= 3 ? `podium-${pos}` : 'podium-other'
 
   return (
     <div class="stats-overlay" style={{ pointerEvents: 'auto' }}>
       <div class="post-race-card">
-        <div class="race-hero">
-          <div>
-            <span class="pos-giant">{pos}</span>
-            <span class="pos-suffix">{suffix}</span>
+        {/* Podium Highlight Header */}
+        <div class={`race-hero ${podiumClass}`}>
+          <div class="race-hero-content">
+            <div class="pos-block">
+              <span class="pos-giant">{pos}</span>
+              <span class="pos-suffix">{suffix}</span>
+            </div>
+            <div class="hero-right">
+              <div class="hero-eyebrow">Race Complete</div>
+              <div class="hero-track">{data.trackName || 'Unknown Track'}</div>
+            </div>
           </div>
-          <div class="hero-right">
-            <div class="hero-eyebrow">Race Complete</div>
-            <div class="hero-track">{data.trackName || 'Unknown Track'}</div>
-          </div>
+          <div class="card-glow-overlay" />
         </div>
 
+        {/* Telemetry Cells (Finish Time & Best Lap) */}
         <div class="time-grid">
           <div class="time-cell">
             <div class="time-cell-label">Finish Time</div>
@@ -241,36 +258,88 @@ const PostRace = ({ data, autoClose, onDismiss }: { data: any, autoClose: number
           </div>
         </div>
 
+        {/* Progression Progress Bars (XP & Class Points Rank) */}
         <div class="prog-block">
-          <div class="prog-row">
-            <div class="prog-label">XP</div>
-            <div class="prog-bar-wrap">
-              <div class="prog-bar-fill" style={{ width: `${xpProg * 100}%` }} />
+          {/* XP Progress Bar Row */}
+          <div class="prog-row-container">
+            <div class="prog-row-header">
+              <div class="prog-label">
+                <span>DRIVING LEVEL</span>
+                <span class="lvl-badge">LVL {level}</span>
+                {levelUp && (
+                  <span class="lvl-up-flash animate-pulse">
+                    <Sparkles size={10} style={{ marginRight: 3, display: 'inline-block' }} />
+                    LEVEL UP!
+                  </span>
+                )}
+              </div>
+              <div class="prog-gained positive">+{data.xpGained || 0} XP</div>
             </div>
-            <div class={`prog-delta ${(data.xpGained || 0) >= 0 ? 'pos' : 'neg'}`}>
-              +{data.xpGained || 0}
+            <div class="prog-row-bar">
+              <div class="prog-bar-wrap">
+                <div class="prog-bar-fill xp-fill" style={{ width: `${xpProg * 100}%` }} />
+              </div>
+              <div class="prog-bar-glow xp-glow" style={{ width: `${xpProg * 100}%` }} />
+            </div>
+            <div class="prog-row-footer">
+              <span>LVL {level}</span>
+              <span>LVL {level + 1}</span>
+            </div>
+          </div>
+
+          {/* Class Points Rank Progress Bar Row */}
+          <div class="prog-row-container">
+            <div class="prog-row-header">
+              <div class="prog-label">
+                <span>RANK XP PROGRESS</span>
+              </div>
+              <div class="prog-gained neutral">+{data.classPointsGained || 0} CP</div>
+            </div>
+            <div class="prog-row-bar">
+              <div class="prog-bar-wrap">
+                <div class="prog-bar-fill cp-fill" style={{ width: `${cpProg * 100}%` }} />
+              </div>
+              <div class="prog-bar-glow cp-glow" style={{ width: `${cpProg * 100}%` }} />
+            </div>
+            <div class="prog-row-footer">
+              <span>CURRENT RANK</span>
+              <span>NEXT RANK</span>
             </div>
           </div>
         </div>
 
+        {/* Ratings Delta Cards (iRating & Safety Rating) */}
         <div class="rating-row">
-          <div class="rating-cell">
-            <span class="rating-cell-label">iRATING</span>
+          <div class="rating-cell-card">
+            <div class="rating-cell-header">
+              <span class="rating-cell-label">iRATING</span>
+              {iRDelta >= 0 ? <TrendingUp size={12} class="pos-icon" /> : <TrendingDown size={12} class="neg-icon" />}
+            </div>
             <span class={`rating-cell-val ${iRDelta >= 0 ? 'pos' : 'neg'}`}>
               {iRDelta >= 0 ? '+' : ''}{iRDelta}
             </span>
           </div>
-          <div class="rating-cell">
-            <span class="rating-cell-label">SAFETY RATING</span>
+          
+          <div class="rating-cell-card">
+            <div class="rating-cell-header">
+              <span class="rating-cell-label">SAFETY RATING</span>
+              {srDelta >= 0 ? <TrendingUp size={12} class="pos-icon" /> : <TrendingDown size={12} class="neg-icon" />}
+            </div>
             <span class={`rating-cell-val ${srDelta >= 0 ? 'pos' : 'neg'}`}>
               {srDelta >= 0 ? '+' : ''}{srDelta.toFixed ? srDelta.toFixed(2) : srDelta}
             </span>
           </div>
         </div>
 
-        <div class="stats-footer">
-          <span class="auto-close-label">Closing in {autoClose}s</span>
-          <span class="key-hint"><KeyCap>⌫ Backspace</KeyCap> to dismiss</span>
+        {/* Footer & Auto-Close Timeline Bar */}
+        <div class="stats-footer-container">
+          <div class="stats-footer">
+            <span class="auto-close-label">Closing in {autoClose}s</span>
+            <span class="key-hint"><KeyCap>⌫ Backspace</KeyCap> to dismiss</span>
+          </div>
+          <div class="timeline-bar-container">
+            <div class="timeline-bar-fill" style={{ width: `${(autoClose / 12) * 100}%` }} />
+          </div>
         </div>
       </div>
     </div>
@@ -350,6 +419,24 @@ export function App() {
   }
 
   useEffect(() => {
+    if (typeof GetParentResourceName === 'undefined') {
+      import('./mockdata').then(m => {
+        setCountdown(m.MOCK_RACE_DATA.countdown)
+        setShowCountdown(true)
+        
+        setOverlay(m.MOCK_RACE_DATA.overlay)
+        setShowOverlay(true)
+        
+        setPostRace(m.MOCK_RACE_DATA.postRace)
+        showStatsRef.current = true
+        setShowStats(true)
+        
+        setTTMenu(m.MOCK_RACE_DATA.tracks)
+        setShowTTMenu(true)
+      })
+      return
+    }
+
     const handler = (e: MessageEvent) => {
       const { action, data = {} } = e.data ?? {}
       if (!action) return
