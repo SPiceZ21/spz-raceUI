@@ -18,6 +18,7 @@ client_scripts {
 exports {
     'ShowCountdown',
     'UpdateRaceOverlay',
+    'UpdateCPDistance',
     'SetRaceOverlayVisible',
     'HideAll',
     'ShowPostRaceStats'

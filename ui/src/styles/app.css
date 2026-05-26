@@ -983,3 +983,84 @@ body {
   box-shadow: 0 0 4px var(--color-primary);
   transition: width 1s linear;
 }
+
+/* ── CP Distance Pill (bottom-center) ────────────────────── */
+
+.cp-dist-pill {
+  position: fixed;
+  bottom: 28vh;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(6, 7, 9, 0.80);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  padding: 5px 16px 7px;
+  text-align: center;
+  pointer-events: none;
+  min-width: 88px;
+  transition: border-color 250ms ease, box-shadow 250ms ease;
+}
+
+.cp-dist-pill.close {
+  border-color: rgba(255, 102, 0, 0.28);
+  box-shadow: 0 0 12px rgba(255, 102, 0, 0.08);
+}
+
+.cp-dist-pill.urgent {
+  animation: cp-dist-pulse 550ms ease-in-out infinite;
+}
+
+@keyframes cp-dist-pulse {
+  0%, 100% { transform: translateX(-50%) scale(1); }
+  50%       { transform: translateX(-50%) scale(1.05); }
+}
+
+.cp-dist-label {
+  display: block;
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.28);
+  margin-bottom: 2px;
+}
+
+.cp-dist-body {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px;
+  line-height: 1;
+}
+
+.cp-dist-arrow {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.25);
+  transition: color 250ms ease;
+  flex-shrink: 0;
+}
+.cp-dist-pill.close .cp-dist-arrow { color: rgba(255, 102, 0, 0.7); }
+
+.cp-dist-val {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 900;
+  font-style: italic;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+  letter-spacing: -1px;
+  transition: color 250ms ease;
+}
+.cp-dist-pill.close .cp-dist-val { color: var(--color-primary); }
+
+.cp-dist-unit {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.4);
+  transition: color 250ms ease;
+  align-self: flex-end;
+  padding-bottom: 4px;
+}
+.cp-dist-pill.close .cp-dist-unit { color: rgba(255, 102, 0, 0.6); }
