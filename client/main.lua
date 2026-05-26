@@ -145,9 +145,17 @@ local function TT_Broadcast(action, data)
     SendNUIMessage({ action = action, data = data })
 end
 
+-- Dedicated distance update — targeted NUI message so the distance pill
+-- re-renders without touching Standings / Telemetry state (no full HUD diff).
+local function UpdateCPDistance(distM)
+    if not isRaceOverlayVisible then return end
+    SendNUIMessage({ action = 'cpDistUpdate', data = { dist = distM or 0 } })
+end
+
 -- Exports
 exports('ShowCountdown', ShowCountdown)
 exports('UpdateRaceOverlay', UpdateRaceOverlay)
+exports('UpdateCPDistance', UpdateCPDistance)
 exports('SetRaceOverlayVisible', SetRaceOverlayVisible)
 exports('HideAll', HideAll)
 exports('ShowPostRaceStats', ShowPostRaceStats)

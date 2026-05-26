@@ -141,6 +141,24 @@ const Telemetry = ({ data }: { data: OverlayState }) => {
   )
 }
 
+/* ── CP Distance Pill ──────────────────────────────────────── */
+
+const CPDistancePill = ({ distM }: { distM: number }) => {
+  if (!distM || distM <= 0) return null
+  const close  = distM < 80
+  const urgent = distM < 30
+  return (
+    <div class={`cp-dist-pill${close ? ' close' : ''}${urgent ? ' urgent' : ''}`}>
+      <span class="cp-dist-label">Next CP</span>
+      <div class="cp-dist-body">
+        <span class="cp-dist-arrow">▲</span>
+        <span class="cp-dist-val">{distM}</span>
+        <span class="cp-dist-unit">m</span>
+      </div>
+    </div>
+  )
+}
+
 /* ── TT Track Menu ─────────────────────────────────────────── */
 
 type FilterType = 'all' | 'circuit' | 'sprint'
@@ -359,6 +377,7 @@ export function App() {
   const [ttMenu,     setTTMenu]     = useState<any[]>([])
   const [postRace,   setPostRace]   = useState<any>(null)
   const [autoClose,  setAutoClose]  = useState(12)
+  const [cpDist,     setCpDist]     = useState(0)
 
   const autoCloseRef  = useRef<any>(null)
   const raceTimerRef  = useRef<any>(null)
@@ -555,11 +574,16 @@ export function App() {
           break
         }
 
+        case 'cpDistUpdate':
+          setCpDist(data.dist ?? 0)
+          break
+
         case 'tt_hide':
         case 'hideAll':
           stopRaceTimer()
           if (autoCloseRef.current) clearInterval(autoCloseRef.current)
           showStatsRef.current = false
+          setCpDist(0)
           setShowOverlay(false)
           setShowCountdown(false)
           setShowTTMenu(false)
@@ -591,6 +615,10 @@ export function App() {
           <Standings positions={overlay.positions || []} mySource={overlay.mySource} />
           <Telemetry data={overlay} />
         </div>
+      )}
+
+      {showOverlay && !overlay.isTT && (
+        <CPDistancePill distM={cpDist} />
       )}
 
       {showTTMenu && (
