@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'preact/hooks'
-import { Trophy, TrendingUp, TrendingDown, ChevronRight, Sparkles } from 'lucide-preact'
+import { Trophy, TrendingUp, TrendingDown, ChevronRight } from 'lucide-preact'
+import { ProgressionStrip } from './components/ProgressionStrip'
 import './styles/app.css'
 
 const RESOURCE = typeof GetParentResourceName === 'undefined' ? 'spz-raceUI' : GetParentResourceName()
@@ -13,7 +14,7 @@ function post(action: string, data: object = {}) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
-  }).catch(() => {})
+  }).catch(() => { })
 }
 
 function formatTime(ms: number) {
@@ -23,6 +24,20 @@ function formatTime(ms: number) {
   const t = Math.floor(ms % 1000)
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}.${t.toString().padStart(3, '0')}`
 }
+
+/* TimeDigits — splits a time string into fixed-width per-character spans.
+   Panchang has no tabular-nums, so we lock each digit's width via CSS to
+   prevent left/right wiggle when digit shapes change (e.g. 1 vs 8). */
+const TimeDigits = ({ text }: { text: string }) => (
+  <>
+    {text.split('').map((c, i) => {
+      const isSep = c === ':' || c === '.'
+      return (
+        <span key={i} class={isSep ? 'tsep' : 'tdig'}>{c}</span>
+      )
+    })}
+  </>
+)
 
 /* ── KeyCap ────────────────────────────────────────────────── */
 
@@ -57,6 +72,7 @@ interface OverlayState {
   bestLapTime?: any
   allTimeBest?: any
   currentLapTime?: number
+  totalRaceTime?: number
   formattedTime?: string
   delta?: number
   myPosition?: number | string
@@ -92,19 +108,24 @@ const Standings = ({ positions, mySource }: { positions: RacerEntry[], mySource?
 /* ── Telemetry ─────────────────────────────────────────────── */
 
 const Telemetry = ({ data }: { data: OverlayState }) => {
-  const totalCPs  = data.totalCheckpoints || 0
-  const cpPct     = totalCPs > 0 ? ((data.checkpoint || 1) / totalCPs) * 100 : 0
+  const totalCPs = data.totalCheckpoints || 0
+  const cpPct = totalCPs > 0 ? ((data.checkpoint || 1) / totalCPs) * 100 : 0
   const displayTime = data.formattedTime || formatTime(data.currentLapTime || 0)
-  
+
+  // Total race time only matters for multi-lap races (lap races, not sprints/TT)
+  const totalLapsNum = Number(data.totalLaps) || 1
+  const isLapRace = totalLapsNum > 1 && !data.isTT
+  const displayTotal = formatTime(data.totalRaceTime || 0)
+
   const displayBest = data.bestLapTime && data.bestLapTime > 0
     ? (typeof data.bestLapTime === 'string' ? data.bestLapTime : formatTime(data.bestLapTime))
     : '--:--.---'
-    
+
   const displayAllTime = data.allTimeBest && data.allTimeBest > 0
     ? (typeof data.allTimeBest === 'string' ? data.allTimeBest : formatTime(data.allTimeBest))
     : '--:--.---'
 
-  const posLabel  = data.myPosition || '1'
+  const posLabel = data.myPosition || '1'
 
   return (
     <div class="telemetry-hud">
@@ -119,7 +140,13 @@ const Telemetry = ({ data }: { data: OverlayState }) => {
           <span class="chip-val">{posLabel}</span>
         </div>
         <div class="timer-section">
-          <div class="lap-timer">{displayTime}</div>
+          <div class="lap-timer"><TimeDigits text={displayTime} /></div>
+          {isLapRace && (
+            <div class="race-timer-total">
+              <span class="rtt-label">TOTAL</span>
+              <span class="rtt-value"><TimeDigits text={displayTotal} /></span>
+            </div>
+          )}
           {data.delta !== undefined && (
             <div class={`delta-pill ${data.delta <= 0 ? 'faster' : 'slower'}`}>
               {data.delta <= 0 ? <TrendingDown size={11} /> : <TrendingUp size={11} />}
@@ -134,8 +161,8 @@ const Telemetry = ({ data }: { data: OverlayState }) => {
       </div>
 
       <div class="best-laps-container">
-        <div class="best-tag pb">⏱ PB: {displayBest}</div>
-        <div class="best-tag tr">🏆 RECORD: {displayAllTime}</div>
+        <div class="best-tag pb">PB: {displayBest}</div>
+        <div class="best-tag tr">RECORD: {displayAllTime}</div>
       </div>
     </div>
   )
@@ -145,7 +172,7 @@ const Telemetry = ({ data }: { data: OverlayState }) => {
 
 const CPDistancePill = ({ distM }: { distM: number }) => {
   if (!distM || distM <= 0) return null
-  const close  = distM < 80
+  const close = distM < 80
   const urgent = distM < 30
   return (
     <div class={`cp-dist-pill${close ? ' close' : ''}${urgent ? ' urgent' : ''}`}>
@@ -234,14 +261,10 @@ const TTMenu = ({ tracks, onSelect, onClose }: {
 /* ── Post-Race Stats ───────────────────────────────────────── */
 
 const PostRace = ({ data, autoClose, onDismiss }: { data: any, autoClose: number, onDismiss: () => void }) => {
-  const pos     = data.position || 1
-  const suffix  = typeof pos === 'number' ? posSuffix(pos) : ''
+  const pos = data.position || 1
+  const suffix = typeof pos === 'number' ? posSuffix(pos) : ''
   const iRDelta = data.iRatingDelta || 0
-  const xpProg  = Math.min(1, Math.max(0, data.xpNewProgress || 0))
-  const cpProg  = Math.min(1, Math.max(0, data.cpNewProgress || 0))
   const srDelta = data.safetyRatingDelta || 0
-  const level   = data.level || 1
-  const levelUp = data.levelUp || false
 
   // Determine podium class for styling highlights
   const podiumClass = typeof pos === 'number' && pos <= 3 ? `podium-${pos}` : 'podium-other'
@@ -276,56 +299,6 @@ const PostRace = ({ data, autoClose, onDismiss }: { data: any, autoClose: number
           </div>
         </div>
 
-        {/* Progression Progress Bars (XP & Class Points Rank) */}
-        <div class="prog-block">
-          {/* XP Progress Bar Row */}
-          <div class="prog-row-container">
-            <div class="prog-row-header">
-              <div class="prog-label">
-                <span>DRIVING LEVEL</span>
-                <span class="lvl-badge">LVL {level}</span>
-                {levelUp && (
-                  <span class="lvl-up-flash animate-pulse">
-                    <Sparkles size={10} style={{ marginRight: 3, display: 'inline-block' }} />
-                    LEVEL UP!
-                  </span>
-                )}
-              </div>
-              <div class="prog-gained positive">+{data.xpGained || 0} XP</div>
-            </div>
-            <div class="prog-row-bar">
-              <div class="prog-bar-wrap">
-                <div class="prog-bar-fill xp-fill" style={{ width: `${xpProg * 100}%` }} />
-              </div>
-              <div class="prog-bar-glow xp-glow" style={{ width: `${xpProg * 100}%` }} />
-            </div>
-            <div class="prog-row-footer">
-              <span>LVL {level}</span>
-              <span>LVL {level + 1}</span>
-            </div>
-          </div>
-
-          {/* Class Points Rank Progress Bar Row */}
-          <div class="prog-row-container">
-            <div class="prog-row-header">
-              <div class="prog-label">
-                <span>RANK XP PROGRESS</span>
-              </div>
-              <div class="prog-gained neutral">+{data.classPointsGained || 0} CP</div>
-            </div>
-            <div class="prog-row-bar">
-              <div class="prog-bar-wrap">
-                <div class="prog-bar-fill cp-fill" style={{ width: `${cpProg * 100}%` }} />
-              </div>
-              <div class="prog-bar-glow cp-glow" style={{ width: `${cpProg * 100}%` }} />
-            </div>
-            <div class="prog-row-footer">
-              <span>CURRENT RANK</span>
-              <span>NEXT RANK</span>
-            </div>
-          </div>
-        </div>
-
         {/* Ratings Delta Cards (iRating & Safety Rating) */}
         <div class="rating-row">
           <div class="rating-cell-card">
@@ -337,7 +310,7 @@ const PostRace = ({ data, autoClose, onDismiss }: { data: any, autoClose: number
               {iRDelta >= 0 ? '+' : ''}{iRDelta}
             </span>
           </div>
-          
+
           <div class="rating-cell-card">
             <div class="rating-cell-header">
               <span class="rating-cell-label">SAFETY RATING</span>
@@ -348,6 +321,16 @@ const PostRace = ({ data, autoClose, onDismiss }: { data: any, autoClose: number
             </span>
           </div>
         </div>
+
+        {/* Progression Strip — bottom-rectangle wrapper composing XPBar + RankBar */}
+        <ProgressionStrip
+          xpGained={data.xpGained}
+          xpNewProgress={data.xpNewProgress}
+          classPointsGained={data.classPointsGained}
+          cpNewProgress={data.cpNewProgress}
+          level={data.level}
+          levelUp={data.levelUp}
+        />
 
         {/* Footer & Auto-Close Timeline Bar */}
         <div class="stats-footer-container">
@@ -368,31 +351,38 @@ const PostRace = ({ data, autoClose, onDismiss }: { data: any, autoClose: number
 
 export function App() {
   const [showCountdown, setShowCountdown] = useState(false)
-  const [showOverlay,   setShowOverlay]   = useState(false)
-  const [showTTMenu,    setShowTTMenu]    = useState(false)
-  const [showStats,     setShowStats]     = useState(false)
+  const [showOverlay, setShowOverlay] = useState(false)
+  const [showTTMenu, setShowTTMenu] = useState(false)
+  const [showStats, setShowStats] = useState(false)
 
-  const [countdown,  setCountdown]  = useState<any>({})
-  const [overlay,    setOverlay]    = useState<OverlayState>({})
-  const [ttMenu,     setTTMenu]     = useState<any[]>([])
-  const [postRace,   setPostRace]   = useState<any>(null)
-  const [autoClose,  setAutoClose]  = useState(12)
-  const [cpDist,     setCpDist]     = useState(0)
+  const [countdown, setCountdown] = useState<any>({})
+  const [overlay, setOverlay] = useState<OverlayState>({})
+  const [ttMenu, setTTMenu] = useState<any[]>([])
+  const [postRace, setPostRace] = useState<any>(null)
+  const [autoClose, setAutoClose] = useState(12)
+  const [cpDist, setCpDist] = useState(0)
 
-  const autoCloseRef  = useRef<any>(null)
-  const raceTimerRef  = useRef<any>(null)
-  const overlayRef    = useRef<OverlayState>({})
-  const raceStartRef  = useRef<number>(0)
-  const lapStartRef   = useRef<number>(0)
-  const showStatsRef  = useRef(false)
+  const autoCloseRef = useRef<any>(null)
+  const raceTimerRef = useRef<any>(null)
+  const overlayRef = useRef<OverlayState>({})
+  const raceStartRef = useRef<number>(0)
+  const lapStartRef = useRef<number>(0)
+  const showStatsRef = useRef(false)
 
-  /* Client-side race timer — runs in race mode (not TT) */
+  /* Client-side race timer — runs in race mode (not TT).
+     Tracks two separate clocks:
+       • lapStartRef  — resets every lap → drives currentLapTime
+       • raceStartRef — set once on race start → drives totalRaceTime  */
   const startRaceTimer = () => {
     if (raceTimerRef.current) return
-    lapStartRef.current = performance.now()
+    const now = performance.now()
+    lapStartRef.current = now
+    if (raceStartRef.current === 0) raceStartRef.current = now
     raceTimerRef.current = setInterval(() => {
-      const elapsed = performance.now() - lapStartRef.current
-      overlayRef.current = { ...overlayRef.current, currentLapTime: elapsed }
+      const t = performance.now()
+      const lap = t - lapStartRef.current
+      const total = t - raceStartRef.current
+      overlayRef.current = { ...overlayRef.current, currentLapTime: lap, totalRaceTime: total }
       setOverlay({ ...overlayRef.current })
     }, 50)
   }
@@ -401,6 +391,7 @@ export function App() {
     if (raceTimerRef.current) {
       clearInterval(raceTimerRef.current)
       raceTimerRef.current = null
+      raceStartRef.current = 0   // reset so next race starts fresh
     }
   }
 
@@ -442,14 +433,14 @@ export function App() {
       import('./mockdata').then(m => {
         setCountdown(m.MOCK_RACE_DATA.countdown)
         setShowCountdown(true)
-        
+
         setOverlay(m.MOCK_RACE_DATA.overlay)
         setShowOverlay(true)
-        
+
         setPostRace(m.MOCK_RACE_DATA.postRace)
         showStatsRef.current = true
         setShowStats(true)
-        
+
         setTTMenu(m.MOCK_RACE_DATA.tracks)
         setShowTTMenu(true)
       })

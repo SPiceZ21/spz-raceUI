@@ -1,0 +1,148 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Progression Strip — Premium Minimal (AAA racing game aesthetic)
+   ─────────────────────────────────────────────────────────────────────────
+   Design principles:
+     • Single accent (orange) on the active fill / hero data only.
+     • Two-tone hierarchy: pure white for primary numbers, dim grey labels.
+     • Sharp 2px corners, hairline 1px dividers — no gradients, no glow soup.
+     • Linear 3px progress bar, single ease-out fill — no shimmer / sparkles.
+     • Tight density — vertical rhythm of 6px, no decorative padding.
+   ───────────────────────────────────────────────────────────────────────── */
+
+.prog-strip {
+  grid-area: prog;
+  display: grid;
+  grid-template-columns: 1fr 1px 1fr;
+  width: 100%;
+  background: #0a0b0d;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  animation: prog-strip-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes prog-strip-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Hairline divider between lanes (1px column in the strip grid) */
+.prog-divider {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* ── Lane (XPBar / RankBar) ─────────────────────────────────────────────── */
+
+.lane {
+  padding: 8px 16px 7px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+/* Header — title row + delta on the right */
+.lane-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  line-height: 1;
+}
+.lane-left {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+.lane-label {
+  font-family: var(--font-display);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: rgba(255, 255, 255, 0.32);
+  text-transform: uppercase;
+}
+.lane-badge {
+  font-family: var(--font-display);
+  font-size: 9px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.04em;
+}
+.lane-badge .lvl-num {
+  color: var(--color-primary);
+  margin-left: 3px;
+}
+
+/* Level-up cue — quiet accent, not arcade flash */
+.lane-flash {
+  font-family: var(--font-display);
+  font-size: 7px;
+  font-weight: 800;
+  color: var(--color-primary);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.85;
+  animation: lane-flash-fade 1.6s ease-in-out infinite;
+}
+@keyframes lane-flash-fade {
+  0%, 100% { opacity: 0.5; }
+  50%      { opacity: 1; }
+}
+
+/* Gain — sign + value + unit */
+.lane-gain {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.lane-gain .gain-sign  { color: var(--color-primary); margin-right: 1px; }
+.lane-gain .gain-unit  { color: rgba(255, 255, 255, 0.42); font-size: 7px; font-weight: 700; margin-left: 3px; letter-spacing: 0.1em; }
+
+/* ── Bar — 2px linear, sharp corners, single accent ─────────────────────── */
+
+.lane-track {
+  position: relative;
+  width: 100%;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.lane-fill {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  width: 0%;
+  transition: width 1.0s cubic-bezier(0.22, 1, 0.36, 1);
+  background: var(--color-primary);
+}
+.lane-fill.cp {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+/* ── Footer — start / pct / end ─────────────────────────────────────────── */
+
+.lane-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-family: var(--font-display);
+  font-size: 7px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.24);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.lane-footer .lane-pct {
+  color: rgba(255, 255, 255, 0.80);
+  font-weight: 800;
+  font-size: 8px;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+}
