@@ -19,6 +19,7 @@ exports {
     'ShowCountdown',
     'UpdateRaceOverlay',
     'UpdateCPDistance',
+    'UpdateCPWaypoint',
     'SetRaceOverlayVisible',
     'HideAll',
     'ShowPostRaceStats'
