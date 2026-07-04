@@ -152,10 +152,18 @@ local function UpdateCPDistance(distM)
     SendNUIMessage({ action = 'cpDistUpdate', data = { dist = distM or 0 } })
 end
 
+-- 3D-billboard waypoint for the next CP: screen-projected position + distance.
+-- data = { dist, onScreen, x, y }  (x/y are 0..1 screen coords)
+local function UpdateCPWaypoint(data)
+    if not isRaceOverlayVisible then return end
+    SendNUIMessage({ action = 'cpWaypoint', data = data or {} })
+end
+
 -- Exports
 exports('ShowCountdown', ShowCountdown)
 exports('UpdateRaceOverlay', UpdateRaceOverlay)
 exports('UpdateCPDistance', UpdateCPDistance)
+exports('UpdateCPWaypoint', UpdateCPWaypoint)
 exports('SetRaceOverlayVisible', SetRaceOverlayVisible)
 exports('HideAll', HideAll)
 exports('ShowPostRaceStats', ShowPostRaceStats)

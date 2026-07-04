@@ -1126,3 +1126,45 @@ body {
   padding-bottom: 4px;
 }
 .cp-dist-pill.close .cp-dist-unit { color: rgba(255, 102, 0, 0.6); }
+
+/* ── 3D-projected Next-CP waypoint billboard ────────────────── */
+.cp-wp {
+  position: fixed;
+  transform: translate(-50%, -100%);   /* anchor stem tip at the CP screen point */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  z-index: 40;
+  will-change: left, top;
+}
+
+/* pill flows inside the billboard, not fixed to the HUD corner */
+.cp-wp .cp-dist-pill {
+  position: static;
+  bottom: auto;
+  left: auto;
+  transform: none;
+}
+.cp-wp .cp-dist-pill.urgent {
+  animation: cp-wp-pulse 550ms ease-in-out infinite;
+}
+@keyframes cp-wp-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.06); }
+}
+
+/* thin stem line from the pill down to the checkpoint point */
+.cp-wp-stem {
+  width: 2px;
+  height: 64px;
+  background: linear-gradient(to bottom, rgba(255, 102, 0, 0.9), rgba(255, 102, 0, 0.05));
+}
+.cp-wp-dot {
+  width: 7px;
+  height: 7px;
+  margin-top: -3px;
+  border-radius: 50%;
+  background: #ff6600;
+  box-shadow: 0 0 8px rgba(255, 102, 0, 0.85);
+}
