@@ -159,11 +159,29 @@ local function UpdateCPWaypoint(data)
     SendNUIMessage({ action = 'cpWaypoint', data = data or {} })
 end
 
+-- Warmup tile panel — data = { remaining, total, track, class, gridPos }
+local function ShowWarmup(data)
+    SendNUIMessage({ action = 'warmup', data = data or {} })
+end
+
+local function HideWarmup()
+    SendNUIMessage({ action = 'warmupEnd', data = {} })
+end
+
+-- Lobby pill — data = { mode = 'hidden'|'join'|'queued'|'intermission',
+--                       queueCount, queuePos, seconds }
+local function UpdateLobby(data)
+    SendNUIMessage({ action = 'lobby', data = data or {} })
+end
+
 -- Exports
 exports('ShowCountdown', ShowCountdown)
 exports('UpdateRaceOverlay', UpdateRaceOverlay)
 exports('UpdateCPDistance', UpdateCPDistance)
 exports('UpdateCPWaypoint', UpdateCPWaypoint)
+exports('ShowWarmup', ShowWarmup)
+exports('HideWarmup', HideWarmup)
+exports('UpdateLobby', UpdateLobby)
 exports('SetRaceOverlayVisible', SetRaceOverlayVisible)
 exports('HideAll', HideAll)
 exports('ShowPostRaceStats', ShowPostRaceStats)
