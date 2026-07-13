@@ -20,6 +20,9 @@ exports {
     'UpdateRaceOverlay',
     'UpdateCPDistance',
     'UpdateCPWaypoint',
+    'ShowWarmup',
+    'HideWarmup',
+    'UpdateLobby',
     'SetRaceOverlayVisible',
     'HideAll',
     'ShowPostRaceStats'

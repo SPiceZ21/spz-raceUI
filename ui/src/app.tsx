@@ -195,6 +195,83 @@ const CPWaypointBillboard = ({ wp }: { wp: CPWaypoint }) => {
   )
 }
 
+/* ── Warmup panel (modular tiles, top-center) ──────────────── */
+
+interface WarmupState {
+  remaining: number
+  total: number
+  track?: string
+  class?: string
+  gridPos?: number
+}
+
+const WarmupPanel = ({ wu }: { wu: WarmupState }) => {
+  if (!wu || wu.remaining <= 0) return null
+  const pct = wu.total > 0 ? (wu.remaining / wu.total) * 100 : 0
+  return (
+    <div class="warmup-panel">
+      <div class="wu-grid">
+        <div class="wu-tile wu-title">
+          <span class="wu-label">Warm-up</span>
+          <span class="wu-value accent">{wu.remaining}s</span>
+        </div>
+        <div class="wu-tile">
+          <span class="wu-label">Track</span>
+          <span class="wu-value sm">{wu.track || '—'}</span>
+        </div>
+        <div class="wu-tile">
+          <span class="wu-label">Class</span>
+          <span class="wu-value sm">{wu.class || '—'}</span>
+        </div>
+        <div class="wu-tile">
+          <span class="wu-label">Grid</span>
+          <span class="wu-value sm">#{wu.gridPos || 0}</span>
+        </div>
+      </div>
+      <div class="wu-bar"><div class="wu-bar-fill" style={{ width: `${pct}%` }} /></div>
+      <div class="wu-hint">Practice the track — race starts when the timer ends</div>
+    </div>
+  )
+}
+
+/* ── Lobby pill (bottom-center: join / queued / next race) ─── */
+
+interface LobbyState {
+  mode: 'hidden' | 'join' | 'queued' | 'intermission'
+  queueCount?: number
+  queuePos?: number
+  seconds?: number
+}
+
+const LobbyPill = ({ lb }: { lb: LobbyState }) => {
+  if (!lb || lb.mode === 'hidden') return null
+  return (
+    <div class={`lobby-pill ${lb.mode}`}>
+      {lb.mode === 'join' && (
+        <>
+          <span class="lp-key">E</span>
+          <span class="lp-text">JOIN RACE</span>
+          {(lb.queueCount ?? 0) > 0 && <span class="lp-sub">{lb.queueCount} in queue</span>}
+        </>
+      )}
+      {lb.mode === 'queued' && (
+        <>
+          <span class="lp-dot" />
+          <span class="lp-text">IN QUEUE</span>
+          <span class="lp-sub">#{lb.queuePos || 1} · {lb.queueCount || 1} waiting</span>
+        </>
+      )}
+      {lb.mode === 'intermission' && (
+        <>
+          <span class="lp-text">NEXT RACE IN</span>
+          <span class="lp-timer">{lb.seconds ?? 0}s</span>
+          <span class="lp-sub"><span class="lp-key sm">E</span> join</span>
+        </>
+      )}
+    </div>
+  )
+}
+
 /* ── TT Track Menu ─────────────────────────────────────────── */
 
 type FilterType = 'all' | 'circuit' | 'sprint'
@@ -371,6 +448,8 @@ export function App() {
   const [autoClose, setAutoClose] = useState(12)
   const [cpDist, setCpDist] = useState(0)
   const [cpWp, setCpWp] = useState<CPWaypoint>({ dist: 0, onScreen: false, x: 0.5, y: 0.5 })
+  const [warmup, setWarmup] = useState<WarmupState>({ remaining: 0, total: 0 })
+  const [lobby, setLobby] = useState<LobbyState>({ mode: 'hidden' })
 
   const autoCloseRef = useRef<any>(null)
   const raceTimerRef = useRef<any>(null)
@@ -592,6 +671,29 @@ export function App() {
           })
           break
 
+        case 'warmup':
+          setWarmup({
+            remaining: data.remaining ?? 0,
+            total: data.total ?? 0,
+            track: data.track,
+            class: data.class,
+            gridPos: data.gridPos,
+          })
+          break
+
+        case 'warmupEnd':
+          setWarmup({ remaining: 0, total: 0 })
+          break
+
+        case 'lobby':
+          setLobby({
+            mode: data.mode ?? 'hidden',
+            queueCount: data.queueCount,
+            queuePos: data.queuePos,
+            seconds: data.seconds,
+          })
+          break
+
         case 'tt_hide':
         case 'hideAll':
           stopRaceTimer()
@@ -602,6 +704,7 @@ export function App() {
           setShowCountdown(false)
           setShowTTMenu(false)
           setShowStats(false)
+          setWarmup({ remaining: 0, total: 0 })
           break
       }
     }
@@ -634,6 +737,9 @@ export function App() {
       {showOverlay && !overlay.isTT && (
         <CPWaypointBillboard wp={cpWp} />
       )}
+
+      <WarmupPanel wu={warmup} />
+      <LobbyPill lb={lobby} />
 
       {showTTMenu && (
         <TTMenu
