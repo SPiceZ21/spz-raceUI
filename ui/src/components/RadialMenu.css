@@ -5,7 +5,6 @@
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(4px);
   z-index: var(--z-overlay);
   opacity: 0;
   pointer-events: none;
@@ -115,7 +114,6 @@
   opacity: 0;
   gap: var(--spacing-8);
   z-index: 5;
-  backdrop-filter: blur(4px);
 }
 
 .radial-menu-overlay.open .radial-menu-close {

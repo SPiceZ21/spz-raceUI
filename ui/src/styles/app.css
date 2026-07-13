@@ -29,7 +29,6 @@ body {
   pointer-events: none;
 }
 
-/* ── Overlay wrappers (no backdrop-filter — causes black in FiveM) ── */
 
 .menu-overlay {
   position: fixed;
@@ -1194,8 +1193,6 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: 6px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
 }
 .wu-tile.wu-title {
   background: rgba(255, 98, 0, 0.12);
@@ -1255,8 +1252,6 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 6px;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
   pointer-events: none;
   z-index: 30;
 }
