@@ -45,7 +45,6 @@ button { font-family: inherit; cursor: pointer; }
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
   pointer-events: auto;
 }
 
