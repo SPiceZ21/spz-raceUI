@@ -261,6 +261,7 @@ const LobbyPill = ({ lb }: { lb: LobbyState }) => {
           <span class="lp-text">IN QUEUE</span>
           {(lb.seconds ?? 0) > 0 && <span class="lp-timer">{lb.seconds}s</span>}
           <span class="lp-sub">#{lb.queuePos || 1} · {lb.queueCount || 1} waiting</span>
+          <span class="lp-sub"><span class="lp-key sm">E</span> leave</span>
         </>
       )}
       {lb.mode === 'intermission' && (
