@@ -182,19 +182,20 @@ const CPWaypointBillboard = ({ wp }: { wp: CPWaypoint }) => {
   if (!wp || !wp.onScreen || !wp.dist || wp.dist <= 0) return null
   const close = wp.dist < 80
   const urgent = wp.dist < 30
-  const style = { left: `${wp.x * 100}%`, top: `${wp.y * 100}%` }
+  // GPU-composited transform (no left/top layout thrash) = rock-steady tracking
+  const style = {
+    transform: `translate3d(${(wp.x * 100).toFixed(3)}vw, ${(wp.y * 100).toFixed(3)}vh, 0)`,
+  }
   return (
     <div class="cp-wp" style={style}>
-      <div class={`cp-dist-pill${close ? ' close' : ''}${urgent ? ' urgent' : ''}`}>
-        <span class="cp-dist-label">Next CP</span>
-        <div class="cp-dist-body">
-          <span class="cp-dist-arrow">▲</span>
-          <span class="cp-dist-val">{wp.dist}</span>
-          <span class="cp-dist-unit">m</span>
+      <div class={`cp-wp-inner${close ? ' close' : ''}${urgent ? ' urgent' : ''}`}>
+        <div class="cp-chip">
+          <span class="cp-chip-val">{wp.dist}</span>
+          <span class="cp-chip-unit">m</span>
         </div>
+        <div class="cp-wp-stem" />
+        <div class="cp-wp-dot" />
       </div>
-      <div class="cp-wp-stem" />
-      <div class="cp-wp-dot" />
     </div>
   )
 }

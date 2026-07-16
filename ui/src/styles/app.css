@@ -863,127 +863,80 @@ body {
   transition: width 1s linear;
 }
 
-/* ── CP Distance Pill (bottom-center) ────────────────────── */
-
-.cp-dist-pill {
-  position: fixed;
-  bottom: 28vh;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(6, 7, 9, 0.80);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 4px;
-  padding: 5px 16px 7px;
-  text-align: center;
-  pointer-events: none;
-  min-width: 88px;
-  transition: border-color 250ms ease, box-shadow 250ms ease;
-}
-
-.cp-dist-pill.close {
-  border-color: rgba(255, 102, 0, 0.28);
-  box-shadow: 0 0 12px rgba(255, 102, 0, 0.08);
-}
-
-.cp-dist-pill.urgent {
-  animation: cp-dist-pulse 550ms ease-in-out infinite;
-}
-
-@keyframes cp-dist-pulse {
-  0%, 100% { transform: translateX(-50%) scale(1); }
-  50%       { transform: translateX(-50%) scale(1.05); }
-}
-
-.cp-dist-label {
-  display: block;
-  font-size: 7px;
-  font-weight: 800;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.28);
-  margin-bottom: 2px;
-}
-
-.cp-dist-body {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 4px;
-  line-height: 1;
-}
-
-.cp-dist-arrow {
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.25);
-  transition: color 250ms ease;
-  flex-shrink: 0;
-}
-.cp-dist-pill.close .cp-dist-arrow { color: rgba(255, 102, 0, 0.7); }
-
-.cp-dist-val {
-  font-family: var(--font-display);
-  font-size: 32px;
-  font-weight: 900;
-  font-style: italic;
-  font-variant-numeric: tabular-nums;
-  color: #fff;
-  letter-spacing: -1px;
-  transition: color 250ms ease;
-}
-.cp-dist-pill.close .cp-dist-val { color: var(--color-primary); }
-
-.cp-dist-unit {
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.4);
-  transition: color 250ms ease;
-  align-self: flex-end;
-  padding-bottom: 4px;
-}
-.cp-dist-pill.close .cp-dist-unit { color: rgba(255, 102, 0, 0.6); }
-
-/* ── 3D-projected Next-CP waypoint billboard ────────────────── */
+/* ── Next-CP 3D waypoint (screen-projected billboard) ──────── */
+/* Positioned purely via a GPU transform — no left/top layout thrash, so it
+   tracks the checkpoint without jitter. */
 .cp-wp {
   position: fixed;
-  transform: translate(-50%, -100%);   /* anchor stem tip at the CP screen point */
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  z-index: 40;
+  will-change: transform;
+}
+
+/* Second layer does the anchoring so the projected transform stays untouched */
+.cp-wp-inner {
   display: flex;
   flex-direction: column;
   align-items: center;
-  pointer-events: none;
-  z-index: 40;
-  will-change: left, top;
+  transform: translate(-50%, -100%);
+  opacity: 0.62;                       /* subtle by default */
+  transition: opacity 200ms ease;
+}
+.cp-wp-inner.close  { opacity: 0.8; }
+.cp-wp-inner.urgent { opacity: 0.95; }
+
+/* Distance chip — minimal, fixed width so digits never shift the layout */
+.cp-chip {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 2px;
+  min-width: 58px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(6, 7, 9, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  transition: border-color 200ms ease, background 200ms ease;
+}
+.cp-chip-val {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 900;
+  font-style: italic;
+  line-height: 1;
+  color: #fff;
+  font-variant-numeric: tabular-nums;   /* no width wobble as digits change */
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+.cp-chip-unit {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.5);
 }
 
-/* pill flows inside the billboard, not fixed to the HUD corner */
-.cp-wp .cp-dist-pill {
-  position: static;
-  bottom: auto;
-  left: auto;
-  transform: none;
+.cp-wp-inner.close .cp-chip {
+  border-color: rgba(255, 102, 0, 0.45);
+  background: rgba(6, 7, 9, 0.6);
 }
-.cp-wp .cp-dist-pill.urgent {
-  animation: cp-wp-pulse 550ms ease-in-out infinite;
-}
-@keyframes cp-wp-pulse {
-  0%, 100% { transform: scale(1); }
-  50%      { transform: scale(1.06); }
-}
+.cp-wp-inner.close .cp-chip-val { color: var(--color-primary); }
+.cp-wp-inner.urgent .cp-chip { border-color: rgba(255, 102, 0, 0.75); }
 
-/* thin stem line from the pill down to the checkpoint point */
+/* thin stem down to the checkpoint point */
 .cp-wp-stem {
-  width: 2px;
-  height: 64px;
-  background: linear-gradient(to bottom, rgba(255, 102, 0, 0.9), rgba(255, 102, 0, 0.05));
+  width: 1px;
+  height: 54px;
+  background: linear-gradient(to bottom, rgba(255, 102, 0, 0.7), rgba(255, 102, 0, 0));
 }
 .cp-wp-dot {
-  width: 7px;
-  height: 7px;
+  width: 5px;
+  height: 5px;
   margin-top: -3px;
   border-radius: 50%;
   background: #ff6600;
-  box-shadow: 0 0 8px rgba(255, 102, 0, 0.85);
+  box-shadow: 0 0 6px rgba(255, 102, 0, 0.6);
 }
 
 /* ── Warmup panel (top-center modular tiles) ───────────────── */
