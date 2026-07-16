@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'preact/hooks'
-import { Trophy, TrendingUp, TrendingDown, ChevronRight } from 'lucide-preact'
+import { TrendingUp, TrendingDown } from 'lucide-preact'
 import { ProgressionStrip } from './components/ProgressionStrip'
 import './styles/app.css'
 
@@ -81,29 +81,33 @@ interface OverlayState {
 
 /* ── Standings ─────────────────────────────────────────────── */
 
-const Standings = ({ positions, mySource }: { positions: RacerEntry[], mySource?: number }) => (
-  <div class="standings-list">
-    {(positions || []).map(r => {
-      const isMe = r.source === mySource
-      return (
-        <div key={r.source} class={`racer-card ${isMe ? 'is-me' : ''}`}>
-          <div class="racer-pos">
-            {r.position === 1 ? <Trophy size={13} class="p1-icon" /> : r.position}
+const MAX_STANDINGS = 6
+
+const Standings = ({ positions, mySource }: { positions: RacerEntry[], mySource?: number }) => {
+  const all = positions || []
+
+  // Show up to 6: top 6, but if I'm outside them swap me into the last slot
+  let shown = all.slice(0, MAX_STANDINGS)
+  const me = all.find(r => r.source === mySource)
+  if (me && !shown.some(r => r.source === mySource)) {
+    shown = [...shown.slice(0, MAX_STANDINGS - 1), me]
+  }
+
+  return (
+    <div class="standings-list">
+      {shown.map(r => {
+        const isMe = r.source === mySource
+        return (
+          <div key={r.source} class={`racer-row ${isMe ? 'is-me' : ''}`}>
+            <span class="racer-pos">{r.position}</span>
+            <span class={`racer-name ${isMe ? 'is-me' : ''}`}>{r.name}</span>
+            <span class="racer-gap-box">{r.gap || (isMe ? 'YOU' : '--')}</span>
           </div>
-          <div class="racer-avatar">
-            <img src={r.avatar || 'https://raw.githubusercontent.com/SPiceZ21/spz-core-media-kit/main/Extra/nametag_profile.png'} alt="" />
-          </div>
-          <div class="racer-details">
-            <div class="racer-top">
-              <span class={`racer-name ${isMe ? 'is-me' : ''}`}>{r.name}</span>
-            </div>
-            <span class="racer-gap">{r.gap || (isMe ? 'YOU' : '--')}</span>
-          </div>
-        </div>
-      )
-    })}
-  </div>
-)
+        )
+      })}
+    </div>
+  )
+}
 
 /* ── Telemetry ─────────────────────────────────────────────── */
 
@@ -275,162 +279,56 @@ const LobbyPill = ({ lb }: { lb: LobbyState }) => {
   )
 }
 
-/* ── TT Track Menu ─────────────────────────────────────────── */
-
-type FilterType = 'all' | 'circuit' | 'sprint'
-
-const TTMenu = ({ tracks, onSelect, onClose }: {
-  tracks: any[]
-  onSelect: (t: any, i: number) => void
-  onClose: () => void
-}) => {
-  const [filter, setFilter] = useState<FilterType>('all')
-  const [search, setSearch] = useState('')
-
-  const visible = tracks.filter(t => {
-    const typeMatch = filter === 'all' || (t.type || '').toLowerCase() === filter
-    const nameMatch = !search || (t.name || '').toLowerCase().includes(search.toLowerCase())
-    return typeMatch && nameMatch
-  })
-
-  return (
-    <div class="menu-overlay" style={{ pointerEvents: 'auto' }}>
-      <div class="tt-menu-card">
-        <div class="tt-menu-header">
-          <div class="tt-menu-eyebrow">SPiceZ Racing</div>
-          <div class="tt-menu-title">TIME TRIALS</div>
-          <div class="tt-filters">
-            {(['all', 'circuit', 'sprint'] as FilterType[]).map(f => (
-              <button key={f} class={`filter-btn ${filter === f ? 'active' : ''}`} onClick={() => setFilter(f)}>
-                {f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)}
-              </button>
-            ))}
-            <input
-              class="tt-search"
-              type="text"
-              placeholder="Search tracks..."
-              value={search}
-              onInput={(e: any) => setSearch(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div class="tt-track-count">{visible.length} track{visible.length !== 1 ? 's' : ''}</div>
-
-        <div class="tt-track-list">
-          {visible.map((t: any, i: number) => {
-            const typeKey = (t.type || 'circuit').toLowerCase()
-            return (
-              <div key={i} class="track-item" onClick={() => onSelect(t, i)}>
-                <div class={`track-type-dot ${typeKey}`} />
-                <div class="track-info">
-                  <div class="track-name">{t.name}</div>
-                  {t.laps && <div class="track-sub">{t.laps} laps · {t.length || '—'}</div>}
-                </div>
-                <div class={`track-badge ${typeKey}`}>{t.type || 'Circuit'}</div>
-                <ChevronRight size={14} />
-              </div>
-            )
-          })}
-          {visible.length === 0 && (
-            <div style={{ padding: '24px', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: '12px' }}>
-              No tracks match
-            </div>
-          )}
-        </div>
-
-        <div class="tt-menu-footer">
-          <button class="tt-close-btn" onClick={onClose}>Close</button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 /* ── Post-Race Stats ───────────────────────────────────────── */
 
-const PostRace = ({ data, autoClose, onDismiss }: { data: any, autoClose: number, onDismiss: () => void }) => {
+const PostRace = ({ data, autoClose }: { data: any, autoClose: number, onDismiss: () => void }) => {
   const pos = data.position || 1
   const suffix = typeof pos === 'number' ? posSuffix(pos) : ''
   const iRDelta = data.iRatingDelta || 0
   const srDelta = data.safetyRatingDelta || 0
-
-  // Determine podium class for styling highlights
   const podiumClass = typeof pos === 'number' && pos <= 3 ? `podium-${pos}` : 'podium-other'
+  const srStr = srDelta.toFixed ? srDelta.toFixed(2) : srDelta
 
   return (
-    <div class="stats-overlay" style={{ pointerEvents: 'auto' }}>
-      <div class="post-race-card">
-        {/* Podium Highlight Header */}
-        <div class={`race-hero ${podiumClass}`}>
-          <div class="race-hero-content">
-            <div class="pos-block">
-              <span class="pos-giant">{pos}</span>
-              <span class="pos-suffix">{suffix}</span>
-            </div>
-            <div class="hero-right">
-              <div class="hero-eyebrow">Race Complete</div>
-              <div class="hero-track">{data.trackName || 'Unknown Track'}</div>
-            </div>
-          </div>
-          <div class="card-glow-overlay" />
-        </div>
+    <div class="results-toast">
+      {/* position + track */}
+      <div class={`rt-pos ${podiumClass}`}>
+        <span class="rt-pos-num">{pos}</span>
+        <span class="rt-pos-suffix">{suffix}</span>
+      </div>
 
-        {/* Telemetry Cells (Finish Time & Best Lap) */}
-        <div class="time-grid">
-          <div class="time-cell">
-            <div class="time-cell-label">Finish Time</div>
-            <div class="time-cell-val">{data.finishTime || '--'}</div>
-          </div>
-          <div class="time-cell">
-            <div class="time-cell-label">Best Lap</div>
-            <div class="time-cell-val">{data.bestLap || '--'}</div>
-          </div>
-        </div>
+      <div class="rt-head rt-box">
+        <span class="rt-eyebrow">Finished</span>
+        <span class="rt-track">{data.trackName || 'Race Complete'}</span>
+      </div>
 
-        {/* Ratings Delta Cards (iRating & Safety Rating) */}
-        <div class="rating-row">
-          <div class="rating-cell-card">
-            <div class="rating-cell-header">
-              <span class="rating-cell-label">iRATING</span>
-              {iRDelta >= 0 ? <TrendingUp size={12} class="pos-icon" /> : <TrendingDown size={12} class="neg-icon" />}
-            </div>
-            <span class={`rating-cell-val ${iRDelta >= 0 ? 'pos' : 'neg'}`}>
-              {iRDelta >= 0 ? '+' : ''}{iRDelta}
-            </span>
-          </div>
+      {/* times */}
+      <div class="rt-metric rt-box">
+        <span class="rt-label">Finish</span>
+        <span class="rt-val">{data.finishTime || '--'}</span>
+      </div>
+      <div class="rt-metric rt-box">
+        <span class="rt-label">Best Lap</span>
+        <span class="rt-val">{data.bestLap || '--'}</span>
+      </div>
 
-          <div class="rating-cell-card">
-            <div class="rating-cell-header">
-              <span class="rating-cell-label">SAFETY RATING</span>
-              {srDelta >= 0 ? <TrendingUp size={12} class="pos-icon" /> : <TrendingDown size={12} class="neg-icon" />}
-            </div>
-            <span class={`rating-cell-val ${srDelta >= 0 ? 'pos' : 'neg'}`}>
-              {srDelta >= 0 ? '+' : ''}{srDelta.toFixed ? srDelta.toFixed(2) : srDelta}
-            </span>
-          </div>
-        </div>
+      {/* deltas */}
+      <div class="rt-metric rt-box">
+        <span class="rt-label">iRating</span>
+        <span class={`rt-delta ${iRDelta >= 0 ? 'pos' : 'neg'}`}>{iRDelta >= 0 ? '+' : ''}{iRDelta}</span>
+      </div>
+      <div class="rt-metric rt-box">
+        <span class="rt-label">Safety</span>
+        <span class={`rt-delta ${srDelta >= 0 ? 'pos' : 'neg'}`}>{srDelta >= 0 ? '+' : ''}{srStr}</span>
+      </div>
 
-        {/* Progression Strip — bottom-rectangle wrapper composing XPBar + RankBar */}
-        <ProgressionStrip
-          xpGained={data.xpGained}
-          xpNewProgress={data.xpNewProgress}
-          classPointsGained={data.classPointsGained}
-          cpNewProgress={data.cpNewProgress}
-          level={data.level}
-          levelUp={data.levelUp}
-        />
+      {data.levelUp && <div class="rt-levelup">LEVEL UP</div>}
 
-        {/* Footer & Auto-Close Timeline Bar */}
-        <div class="stats-footer-container">
-          <div class="stats-footer">
-            <span class="auto-close-label">Closing in {autoClose}s</span>
-            <span class="key-hint"><KeyCap>⌫ Backspace</KeyCap> to dismiss</span>
-          </div>
-          <div class="timeline-bar-container">
-            <div class="timeline-bar-fill" style={{ width: `${(autoClose / 12) * 100}%` }} />
-          </div>
-        </div>
+      {/* dismiss */}
+      <div class="rt-tail rt-box">
+        <span class="rt-hint"><KeyCap>⌫</KeyCap></span>
+        <span class="rt-timer">{autoClose}s</span>
+        <div class="rt-progress"><div class="rt-progress-fill" style={{ width: `${(autoClose / 12) * 100}%` }} /></div>
       </div>
     </div>
   )
@@ -441,18 +339,17 @@ const PostRace = ({ data, autoClose, onDismiss }: { data: any, autoClose: number
 export function App() {
   const [showCountdown, setShowCountdown] = useState(false)
   const [showOverlay, setShowOverlay] = useState(false)
-  const [showTTMenu, setShowTTMenu] = useState(false)
   const [showStats, setShowStats] = useState(false)
 
   const [countdown, setCountdown] = useState<any>({})
   const [overlay, setOverlay] = useState<OverlayState>({})
-  const [ttMenu, setTTMenu] = useState<any[]>([])
   const [postRace, setPostRace] = useState<any>(null)
   const [autoClose, setAutoClose] = useState(12)
   const [cpDist, setCpDist] = useState(0)
   const [cpWp, setCpWp] = useState<CPWaypoint>({ dist: 0, onScreen: false, x: 0.5, y: 0.5 })
   const [warmup, setWarmup] = useState<WarmupState>({ remaining: 0, total: 0 })
   const [lobby, setLobby] = useState<LobbyState>({ mode: 'hidden' })
+  const [showStandings, setShowStandings] = useState(true)
 
   const autoCloseRef = useRef<any>(null)
   const raceTimerRef = useRef<any>(null)
@@ -532,9 +429,6 @@ export function App() {
         setPostRace(m.MOCK_RACE_DATA.postRace)
         showStatsRef.current = true
         setShowStats(true)
-
-        setTTMenu(m.MOCK_RACE_DATA.tracks)
-        setShowTTMenu(true)
       })
       return
     }
@@ -653,14 +547,6 @@ export function App() {
           }, 1000)
           break
 
-        case 'tt_open_menu': {
-          const raw = data.tracks
-          const tracks = Array.isArray(raw) ? raw : Object.values(raw || {})
-          setTTMenu(tracks)
-          setShowTTMenu(true)
-          break
-        }
-
         case 'cpDistUpdate':
           setCpDist(data.dist ?? 0)
           break
@@ -697,6 +583,14 @@ export function App() {
           })
           break
 
+        case 'standingsToggle':
+          setShowStandings(s => !s)
+          break
+
+        case 'dismissStats':
+          dismissStats()
+          break
+
         case 'tt_hide':
         case 'hideAll':
           stopRaceTimer()
@@ -705,7 +599,6 @@ export function App() {
           setCpDist(0)
           setShowOverlay(false)
           setShowCountdown(false)
-          setShowTTMenu(false)
           setShowStats(false)
           setWarmup({ remaining: 0, total: 0 })
           break
@@ -732,7 +625,7 @@ export function App() {
 
       {showOverlay && (
         <div class="hud-layer">
-          <Standings positions={overlay.positions || []} mySource={overlay.mySource} />
+          {showStandings && <Standings positions={overlay.positions || []} mySource={overlay.mySource} />}
           <Telemetry data={overlay} />
         </div>
       )}
@@ -743,14 +636,6 @@ export function App() {
 
       <WarmupPanel wu={warmup} />
       <LobbyPill lb={lobby} />
-
-      {showTTMenu && (
-        <TTMenu
-          tracks={ttMenu}
-          onSelect={(t, i) => { post('tt_selectTrack', { index: t.index || i + 1 }); setShowTTMenu(false) }}
-          onClose={() => { setShowTTMenu(false); post('tt_closeMenu') }}
-        />
-      )}
 
       {showStats && postRace && (
         <PostRace data={postRace} autoClose={autoClose} onDismiss={dismissStats} />

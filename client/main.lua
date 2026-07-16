@@ -117,21 +117,39 @@ local function HideAll()
     SendNUIMessage({ action = 'hideAll' })
 end
 
+-- Post-race results are NON-BLOCKING: no NUI focus, so the player keeps full
+-- control and can drive off immediately. Backspace-to-dismiss is handled here
+-- in Lua (a focusless NUI can't receive keyboard input).
+local _statsActive = false
+
+local function HidePostRaceStats()
+    _statsActive = false
+    SendNUIMessage({ action = 'dismissStats' })
+end
+
 local function ShowPostRaceStats(data)
     isRacing = false
-    SetNuiFocus(true, true)
+    _statsActive = true
+    -- NO SetNuiFocus — player stays in control
     SendNUIMessage({
         action = 'postRaceStats',
         data = data
     })
+
+    CreateThread(function()
+        while _statsActive do
+            -- 177 = INPUT_FRONTEND_DELETE (Backspace)
+            if IsControlJustPressed(0, 177) then
+                HidePostRaceStats()
+                break
+            end
+            Wait(0)
+        end
+    end)
 end
 
 -- Time Trial Exports
-local function TT_ShowMenu(tracks)
-    SetNuiFocus(true, true)
-    SendNUIMessage({ action = 'tt_open_menu', data = { tracks = tracks } })
-end
-
+-- (track-selection menu moved to ox_lib in spz-races/client/timetrail.lua)
 local function TT_UpdateHUD(data)
     SendNUIMessage({ action = 'tt_hud_show', data = data })
 end
@@ -168,6 +186,12 @@ local function HideWarmup()
     SendNUIMessage({ action = 'warmupEnd', data = {} })
 end
 
+-- Toggle the standings list (keybind, rebindable in Settings → Key Bindings)
+RegisterCommand("standingstoggle", function()
+    SendNUIMessage({ action = 'standingsToggle', data = {} })
+end, false)
+RegisterKeyMapping("standingstoggle", "Race: Toggle Standings List", "keyboard", "Z")
+
 -- Lobby pill — data = { mode = 'hidden'|'join'|'queued'|'intermission',
 --                       queueCount, queuePos, seconds }
 local function UpdateLobby(data)
@@ -185,7 +209,6 @@ exports('UpdateLobby', UpdateLobby)
 exports('SetRaceOverlayVisible', SetRaceOverlayVisible)
 exports('HideAll', HideAll)
 exports('ShowPostRaceStats', ShowPostRaceStats)
-exports('TT_ShowMenu', TT_ShowMenu)
 exports('TT_UpdateHUD', TT_UpdateHUD)
 exports('TT_Hide', TT_Hide)
 exports('TT_Broadcast', TT_Broadcast)
@@ -201,20 +224,8 @@ RegisterNetEvent("spz_race:state_updated", function(state)
     end
 end)
 
--- Time Trial NUI Callbacks
-RegisterNUICallback("tt_selectTrack", function(data, cb)
-    SetNuiFocus(false, false)
-    TriggerEvent("SPZ:tt:nuiSelectTrack", data.index)
-    cb("ok")
-end)
-
-RegisterNUICallback("tt_closeMenu", function(_, cb)
-    SetNuiFocus(false, false)
-    TriggerEvent("SPZ:tt:nuiCloseMenu")
-    cb("ok")
-end)
-
 RegisterNUICallback("tt_dismissResults", function(_, cb)
+    _statsActive = false           -- stop the backspace poll if it's still running
     SetNuiFocus(false, false)
     TriggerEvent("SPZ:tt:nuiDismissResults")
     cb("ok")
