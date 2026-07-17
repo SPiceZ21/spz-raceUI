@@ -43,6 +43,8 @@ local function UpdateRaceOverlay(data)
             racer.name = rawName
             racer.avatar = p['spz:avatar'] or "https://raw.githubusercontent.com/SPiceZ21/spz-core-media-kit/main/Extra/nametag_profile.png"
             racer.licenseClass = p['spz:licenseClass'] or "D"
+            racer.nation = p['spz:nation']
+            racer.raceNumber = p['spz:raceNumber']
             
             if racer.source == (data.mySource or GetPlayerServerId(PlayerId())) then
                 hudCache.myPosition = racer.position
@@ -150,8 +152,9 @@ local function UpdateCPWaypoint(data)
 end
 
 -- Sector strip — data = { sector = 1..3, time, colour = 'purple'|'green'|'yellow', delta }
+-- No isRaceOverlayVisible guard: time trials never call SetRaceOverlayVisible,
+-- and the NUI only renders the strip while an overlay is on screen anyway.
 local function UpdateSector(data)
-    if not isRaceOverlayVisible then return end
     SendNUIMessage({ action = 'sector', data = data or {} })
 end
 

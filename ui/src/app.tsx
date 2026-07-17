@@ -59,6 +59,8 @@ interface RacerEntry {
   gap?: string
   avatar?: string
   licenseClass?: string
+  nation?: string      // ISO 3166-1 alpha-2, lowercase
+  raceNumber?: number  // 1-99
 }
 
 type SectorColour = 'purple' | 'green' | 'yellow'
@@ -126,6 +128,10 @@ const Standings = ({ positions, mySource }: { positions: RacerEntry[], mySource?
         return (
           <div key={r.source} class={`racer-row ${isMe ? 'is-me' : ''}`}>
             <span class="racer-pos">{r.position}</span>
+            {r.nation
+              ? <img class="racer-flag" src={`flags/${r.nation}.webp`} alt="" />
+              : <span class="racer-flag placeholder" />}
+            {r.raceNumber != null && <span class="racer-num">{r.raceNumber}</span>}
             <span class={`racer-name ${isMe ? 'is-me' : ''}`}>{r.name}</span>
             <span class="racer-gap-box">{r.gap || (isMe ? 'YOU' : '--')}</span>
           </div>
