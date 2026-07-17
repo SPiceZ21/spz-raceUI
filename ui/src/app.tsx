@@ -61,6 +61,32 @@ interface RacerEntry {
   licenseClass?: string
 }
 
+type SectorColour = 'purple' | 'green' | 'yellow'
+
+interface SectorEntry {
+  time: number
+  colour: SectorColour
+  delta?: number
+}
+
+/* Sector strip — S1|S2|S3 for the current lap. Sectors are derived from the
+   track's checkpoint count server-side; this only renders what it is told. */
+const SectorStrip = ({ sectors }: { sectors: (SectorEntry | null)[] }) => (
+  <div class="sector-strip">
+    {[0, 1, 2].map((i) => {
+      const s = sectors[i]
+      return (
+        <div key={i} class={`sector-cell ${s ? s.colour : 'pending'}`}>
+          <span class="sector-label">S{i + 1}</span>
+          <span class="sector-time">
+            {s ? (s.time / 1000).toFixed(2) : '--.--'}
+          </span>
+        </div>
+      )
+    })}
+  </div>
+)
+
 interface OverlayState {
   visible?: boolean
   positions?: RacerEntry[]
@@ -111,7 +137,7 @@ const Standings = ({ positions, mySource }: { positions: RacerEntry[], mySource?
 
 /* ── Telemetry ─────────────────────────────────────────────── */
 
-const Telemetry = ({ data }: { data: OverlayState }) => {
+const Telemetry = ({ data, sectors }: { data: OverlayState; sectors: (SectorEntry | null)[] }) => {
   const totalCPs = data.totalCheckpoints || 0
   const cpPct = totalCPs > 0 ? ((data.checkpoint || 1) / totalCPs) * 100 : 0
   const displayTime = data.formattedTime || formatTime(data.currentLapTime || 0)
@@ -163,6 +189,8 @@ const Telemetry = ({ data }: { data: OverlayState }) => {
       <div class="cp-bar">
         <div class="cp-bar-fill" style={{ width: `${cpPct}%` }} />
       </div>
+
+      <SectorStrip sectors={sectors} />
 
       <div class="best-laps-container">
         <div class="best-tag pb">PB: {displayBest}</div>
@@ -350,6 +378,7 @@ export function App() {
   const [cpWp, setCpWp] = useState<CPWaypoint>({ dist: 0, onScreen: false, x: 0.5, y: 0.5 })
   const [warmup, setWarmup] = useState<WarmupState>({ remaining: 0, total: 0 })
   const [lobby, setLobby] = useState<LobbyState>({ mode: 'hidden' })
+  const [sectors, setSectors] = useState<(SectorEntry | null)[]>([null, null, null])
   const [showStandings, setShowStandings] = useState(true)
 
   const autoCloseRef = useRef<any>(null)
@@ -481,6 +510,12 @@ export function App() {
             lapNum: data.lapNum || overlayRef.current.lapNum,
             checkpoint: data.checkpoint || overlayRef.current.checkpoint,
           }
+          // The clocks belong to the local interval. If a payload is ever
+          // allowed to write them the two epochs disagree and the seconds
+          // digit flickers between them, so drop them from every patch.
+          delete patch.currentLapTime
+          delete patch.totalRaceTime
+
           const myEntry = (patch.positions || []).find((r: any) => r.source === patch.mySource)
           patch.myPosition = myEntry?.position || data.myPosition || overlayRef.current.myPosition || '1'
           merge(patch)
@@ -493,11 +528,6 @@ export function App() {
           break
         }
 
-        case 'race_timer':
-          // Direct timer feed from Lua if present; otherwise client timer handles it
-          merge({ currentLapTime: data.time || 0 })
-          setShowOverlay(true)
-          break
 
         case 'tt_timer':
           merge({ formattedTime: data.formatted, isTT: true })
@@ -546,6 +576,21 @@ export function App() {
               return prev - 1
             })
           }, 1000)
+          break
+
+        case 'sector': {
+          const idx = (data.sector || 1) - 1
+          if (idx < 0 || idx > 2) break
+          setSectors((prev) => {
+            const next = [...prev]
+            next[idx] = { time: data.time || 0, colour: data.colour || 'yellow', delta: data.delta }
+            return next
+          })
+          break
+        }
+
+        case 'sectorReset':
+          setSectors([null, null, null])
           break
 
         case 'cpDistUpdate':
@@ -627,7 +672,7 @@ export function App() {
       {showOverlay && (
         <div class="hud-layer">
           {showStandings && <Standings positions={overlay.positions || []} mySource={overlay.mySource} />}
-          <Telemetry data={overlay} />
+          <Telemetry data={overlay} sectors={sectors} />
         </div>
       )}
 
