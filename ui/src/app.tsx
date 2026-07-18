@@ -78,7 +78,9 @@ const SectorStrip = ({ sectors }: { sectors: (SectorEntry | null)[] }) => (
     {[0, 1, 2].map((i) => {
       const s = sectors[i]
       return (
-        <div key={i} class={`sector-cell ${s ? s.colour : 'pending'}`}>
+        // key includes the time so a fresh result re-mounts the cell and
+        // retriggers the pop animation
+        <div key={`${i}-${s?.time ?? 'p'}`} class={`sector-cell ${s ? s.colour : 'pending'}`}>
           <span class="sector-label">S{i + 1}</span>
           <span class="sector-time">
             {s ? (s.time / 1000).toFixed(2) : '--.--'}
@@ -143,7 +145,7 @@ const Standings = ({ positions, mySource }: { positions: RacerEntry[], mySource?
 
 /* ── Telemetry ─────────────────────────────────────────────── */
 
-const Telemetry = ({ data, sectors }: { data: OverlayState; sectors: (SectorEntry | null)[] }) => {
+const Telemetry = ({ data }: { data: OverlayState }) => {
   const totalCPs = data.totalCheckpoints || 0
   const cpPct = totalCPs > 0 ? ((data.checkpoint || 1) / totalCPs) * 100 : 0
   const displayTime = data.formattedTime || formatTime(data.currentLapTime || 0)
@@ -195,8 +197,6 @@ const Telemetry = ({ data, sectors }: { data: OverlayState; sectors: (SectorEntr
       <div class="cp-bar">
         <div class="cp-bar-fill" style={{ width: `${cpPct}%` }} />
       </div>
-
-      <SectorStrip sectors={sectors} />
 
       <div class="best-laps-container">
         <div class="best-tag pb">PB: {displayBest}</div>
@@ -355,6 +355,14 @@ const PostRace = ({ data, autoClose }: { data: any, autoClose: number, onDismiss
       <div class="rt-metric rt-box">
         <span class="rt-label">Safety</span>
         <span class={`rt-delta ${srDelta >= 0 ? 'pos' : 'neg'}`}>{srDelta >= 0 ? '+' : ''}{srStr}</span>
+      </div>
+
+      {/* clean race / incidents */}
+      <div class="rt-metric rt-box">
+        <span class="rt-label">Race</span>
+        {data.cleanRace
+          ? <span class="rt-clean">CLEAN</span>
+          : <span class="rt-incidents">{data.incidents || 0} incident{(data.incidents || 0) === 1 ? '' : 's'}</span>}
       </div>
 
       {data.levelUp && <div class="rt-levelup">LEVEL UP</div>}
@@ -677,8 +685,13 @@ export function App() {
 
       {showOverlay && (
         <div class="hud-layer">
-          {showStandings && <Standings positions={overlay.positions || []} mySource={overlay.mySource} />}
-          <Telemetry data={overlay} sectors={sectors} />
+          {/* Left column: standings with the sector strip docked under it.
+              Hiding the list (Z) lets the strip slide up to the top slot. */}
+          <div class="hud-left">
+            {showStandings && <Standings positions={overlay.positions || []} mySource={overlay.mySource} />}
+            <SectorStrip sectors={sectors} />
+          </div>
+          <Telemetry data={overlay} />
         </div>
       )}
 
