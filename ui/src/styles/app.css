@@ -391,107 +391,119 @@ body {
   transition: width 200ms ease;
 }
 
-/* ── Sector strip — F1 timing-tower style ────────────────── */
+/* ── Sector strip — broadcast timing bar ─────────────────── */
 /* Sim-racing convention: purple = session best, green = own best,
-   yellow = slower than own best. State fills the whole box. */
+   yellow = slower than own best. Minimal, clean AAA style. */
 
 .sector-strip {
   display: flex;
   gap: 4px;
+  padding: 0;
+  margin-top: 4px;
 }
 
 .sector-cell {
   flex: 1;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  padding: 2px 6px 3px;
-  background: rgba(6, 7, 9, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(8, 9, 12, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.04);
   border-radius: 4px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+}
+
+.sector-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .sector-label {
-  font-family: var(--font-mono);
-  font-size: 8px;
-  font-weight: 700;
+  font-family: var(--font-main);
+  font-size: 9px;
+  font-weight: 400;
   letter-spacing: 0.1em;
-  color: rgba(255, 255, 255, 0.4);
-  line-height: 1;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
 }
 
 .sector-time {
-  font-family: var(--font-display);
-  font-size: 11px;
-  font-weight: 800;
+  font-family: var(--font-main);
+  font-size: 13px;
+  font-weight: 300;
   font-variant-numeric: tabular-nums;
-  color: rgba(255, 255, 255, 0.92);
-  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.9);
 }
 
-.sector-cell.pending .sector-time  { color: rgba(255, 255, 255, 0.25); }
-.sector-cell.pending .sector-label { color: rgba(255, 255, 255, 0.25); }
+.sector-cell.pending .sector-time  { color: rgba(255, 255, 255, 0.2); }
+.sector-cell.pending .sector-label { color: rgba(255, 255, 255, 0.2); }
 
 @keyframes sec-pop {
-  0%   { transform: scale(0.9); }
-  55%  { transform: scale(1.08); }
-  100% { transform: scale(1); }
+  0%   { transform: translateY(4px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
 }
 
 .sector-cell.purple {
-  background: linear-gradient(135deg, #9b4dff 0%, #6a22e0 55%, #4c14b0 100%);
-  border-color: rgba(190, 130, 255, 0.55);
+  background: rgba(164, 91, 255, 0.15);
+  border-color: rgba(164, 91, 255, 0.3);
+  box-shadow: 0 4px 16px rgba(164, 91, 255, 0.2);
   animation: sec-pop 320ms cubic-bezier(0.16, 1, 0.3, 1);
 }
-.sector-cell.purple .sector-label { color: rgba(255, 255, 255, 0.75); }
-.sector-cell.purple .sector-time  { color: #fff; }
+.sector-cell.purple .sector-label { color: rgba(200, 145, 255, 0.8); }
+.sector-cell.purple .sector-time  { color: #cda2ff; font-weight: 400; }
 
 .sector-cell.green {
-  background: linear-gradient(135deg, #00d97e 0%, #00a35c 55%, #007a44 100%);
-  border-color: rgba(0, 255, 157, 0.5);
+  background: rgba(0, 224, 135, 0.15);
+  border-color: rgba(0, 224, 135, 0.3);
+  box-shadow: 0 4px 16px rgba(0, 224, 135, 0.2);
   animation: sec-pop 320ms cubic-bezier(0.16, 1, 0.3, 1);
 }
-.sector-cell.green .sector-label { color: rgba(255, 255, 255, 0.75); }
-.sector-cell.green .sector-time  { color: #fff; }
+.sector-cell.green .sector-label { color: rgba(125, 255, 196, 0.8); }
+.sector-cell.green .sector-time  { color: #7dffc4; font-weight: 400; }
 
 .sector-cell.yellow {
-  background: linear-gradient(135deg, #ffe066 0%, #ffc400 55%, #e09e00 100%);
-  border-color: rgba(255, 224, 100, 0.65);
+  background: rgba(255, 196, 0, 0.15);
+  border-color: rgba(255, 196, 0, 0.3);
+  box-shadow: 0 4px 16px rgba(255, 196, 0, 0.15);
   animation: sec-pop 320ms cubic-bezier(0.16, 1, 0.3, 1);
 }
-.sector-cell.yellow .sector-label { color: rgba(0, 0, 0, 0.55); }
-.sector-cell.yellow .sector-time  { color: #101010; }
+.sector-cell.yellow .sector-label { color: rgba(255, 224, 100, 0.8); }
+.sector-cell.yellow .sector-time  { color: #ffe066; font-weight: 400; }
 
 .best-laps-container {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-  margin-top: 2px;
+  margin-top: 4px;
 }
 
 .best-tag {
-  font-family: var(--font-display);
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.05em;
+  font-family: var(--font-main);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
   font-variant-numeric: tabular-nums;
-  background: rgba(6, 7, 9, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  padding: 3px 6px;
-  border-radius: 3px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  background: rgba(8, 9, 12, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  padding: 4px 8px;
+  border-radius: 4px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  text-transform: uppercase;
 }
 
 .best-tag.pb {
-  color: var(--color-warning);
-  border-color: rgba(255, 204, 0, 0.1);
+  color: rgba(255, 204, 0, 0.9);
+  border-color: rgba(255, 204, 0, 0.15);
 }
 
 .best-tag.tr {
-  color: var(--color-success);
-  border-color: rgba(0, 255, 157, 0.1);
+  color: rgba(0, 255, 157, 0.9);
+  border-color: rgba(0, 255, 157, 0.15);
 }
 
 /* ── KeyCap ──────────────────────────────────────────────── */

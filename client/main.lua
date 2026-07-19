@@ -38,9 +38,17 @@ local function UpdateRaceOverlay(data)
     if data.positions then
         for i, racer in ipairs(data.positions) do
             local p = Player(racer.source).state
-            local rawName = p['spz:name'] or p['spz:nametag'] or GetPlayerName(GetPlayerFromServerId(racer.source)) or "Racer"
-            if rawName == "**INVALID**" then rawName = GetPlayerName(GetPlayerFromServerId(racer.source)) or "Racer" end
-            racer.name = rawName
+            -- racer.name comes from the SERVER (always valid). Statebag name is
+            -- only an override once it has replicated; never downgrade to
+            -- "**INVALID**" or a stale local-index lookup.
+            local stateName = p['spz:name']
+            if stateName == "" or stateName == "**INVALID**" then stateName = nil end
+            if (not racer.name) or racer.name == "" or racer.name == "**INVALID**" then
+                local localIdx = GetPlayerFromServerId(racer.source)
+                racer.name = (localIdx ~= -1 and GetPlayerName(localIdx)) or "Racer"
+                if racer.name == "**INVALID**" then racer.name = "Racer" end
+            end
+            racer.name = stateName or racer.name
             racer.avatar = p['spz:avatar'] or "https://raw.githubusercontent.com/SPiceZ21/spz-core-media-kit/main/Extra/nametag_profile.png"
             racer.licenseClass = p['spz:licenseClass'] or "D"
             racer.nation = p['spz:nation']

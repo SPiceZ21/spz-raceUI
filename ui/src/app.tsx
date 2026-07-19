@@ -81,10 +81,12 @@ const SectorStrip = ({ sectors }: { sectors: (SectorEntry | null)[] }) => (
         // key includes the time so a fresh result re-mounts the cell and
         // retriggers the pop animation
         <div key={`${i}-${s?.time ?? 'p'}`} class={`sector-cell ${s ? s.colour : 'pending'}`}>
-          <span class="sector-label">S{i + 1}</span>
-          <span class="sector-time">
-            {s ? (s.time / 1000).toFixed(2) : '--.--'}
-          </span>
+          <div class="sector-inner">
+            <span class="sector-label">S{i + 1}</span>
+            <span class="sector-time">
+              {s ? (s.time / 1000).toFixed(2) : '--.--'}
+            </span>
+          </div>
         </div>
       )
     })}
