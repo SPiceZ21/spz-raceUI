@@ -41,7 +41,7 @@ local function UpdateRaceOverlay(data)
             -- racer.name comes from the SERVER (always valid). Statebag name is
             -- only an override once it has replicated; never downgrade to
             -- "**INVALID**" or a stale local-index lookup.
-            local stateName = p['spz:name']
+            local stateName = p['spz:name'] or p['username']
             if stateName == "" or stateName == "**INVALID**" then stateName = nil end
             if (not racer.name) or racer.name == "" or racer.name == "**INVALID**" then
                 local localIdx = GetPlayerFromServerId(racer.source)
