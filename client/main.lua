@@ -209,6 +209,12 @@ exports('TT_UpdateHUD', TT_UpdateHUD)
 exports('TT_Hide', TT_Hide)
 exports('TT_Broadcast', TT_Broadcast)
 
+-- Split delta tower — data = { cp, total, split, delta }
+local function ShowSplitDelta(data)
+    SendNUIMessage({ action = 'splitDelta', data = data or {} })
+end
+exports('ShowSplitDelta', ShowSplitDelta)
+
 -- Event Listeners for Race Bridge
 RegisterNetEvent("spz_race:state_updated", function(state)
     if state == "IDLE" or state == "CLEANUP" then

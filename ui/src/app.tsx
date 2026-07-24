@@ -73,6 +73,22 @@ interface SectorEntry {
 
 /* Sector strip — S1|S2|S3 for the current lap. Sectors are derived from the
    track's checkpoint count server-side; this only renders what it is told. */
+/* Split delta tower — flashes "+0.21 / -0.08 / PB" at each CP crossing,
+   coloured against your best lap. Auto-fades; keyed so it re-triggers. */
+const SplitDelta = ({ s }: { s: { delta: number | null; cp: number; total: number; key: number } }) => {
+  const d = s.delta
+  const cls = d == null ? 'first' : d < -5 ? 'ahead' : d > 5 ? 'behind' : 'even'
+  const text =
+    d == null ? 'BEST'
+      : (d <= 0 ? '-' : '+') + (Math.abs(d) / 1000).toFixed(2)
+  return (
+    <div key={s.key} class={`split-delta ${cls}`}>
+      <span class="split-cp">CP {s.cp}/{s.total}</span>
+      <span class="split-val">{text}</span>
+    </div>
+  )
+}
+
 const SectorStrip = ({ sectors }: { sectors: (SectorEntry | null)[] }) => (
   <div class="sector-strip">
     {[0, 1, 2].map((i) => {
@@ -395,7 +411,15 @@ export function App() {
   const [warmup, setWarmup] = useState<WarmupState>({ remaining: 0, total: 0 })
   const [lobby, setLobby] = useState<LobbyState>({ mode: 'hidden' })
   const [sectors, setSectors] = useState<(SectorEntry | null)[]>([null, null, null])
+  const [split, setSplit] = useState<{ delta: number | null; cp: number; total: number; key: number } | null>(null)
   const [showStandings, setShowStandings] = useState(true)
+
+  // Auto-hide the split delta a few seconds after each crossing
+  useEffect(() => {
+    if (!split) return
+    const t = setTimeout(() => setSplit(null), 3200)
+    return () => clearTimeout(t)
+  }, [split?.key])
 
   const autoCloseRef = useRef<any>(null)
   const raceTimerRef = useRef<any>(null)
@@ -609,6 +633,15 @@ export function App() {
           setSectors([null, null, null])
           break
 
+        case 'splitDelta':
+          setSplit({
+            delta: data.delta ?? null,
+            cp: data.cp ?? 0,
+            total: data.total ?? 0,
+            key: Date.now(),
+          })
+          break
+
         case 'cpDistUpdate':
           setCpDist(data.dist ?? 0)
           break
@@ -700,6 +733,8 @@ export function App() {
       {showOverlay && !overlay.isTT && (
         <CPWaypointBillboard wp={cpWp} />
       )}
+
+      {split && <SplitDelta s={split} />}
 
       <WarmupPanel wu={warmup} />
       <LobbyPill lb={lobby} />
