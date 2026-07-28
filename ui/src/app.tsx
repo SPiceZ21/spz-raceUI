@@ -75,15 +75,23 @@ interface SectorEntry {
    track's checkpoint count server-side; this only renders what it is told. */
 /* Split delta tower — flashes "+0.21 / -0.08 / PB" at each CP crossing,
    coloured against your best lap. Auto-fades; keyed so it re-triggers. */
-const SplitDelta = ({ s }: { s: { delta: number | null; cp: number; total: number; key: number } }) => {
+const SplitDelta = ({ s }: { s: { delta: number | null; split?: number; cp: number; total: number; key: number } }) => {
   const d = s.delta
-  const cls = d == null ? 'first' : d < -5 ? 'ahead' : d > 5 ? 'behind' : 'even'
-  const text =
-    d == null ? 'BEST'
-      : (d <= 0 ? '-' : '+') + (Math.abs(d) / 1000).toFixed(2)
+  // No reference lap yet (first flying lap): show the raw split time so the
+  // tower is still informative, tagged REF instead of a misleading "BEST".
+  const first = d == null
+  const cls = first ? 'first' : d < -5 ? 'ahead' : d > 5 ? 'behind' : 'even'
+  const fmtSplit = (ms?: number) => {
+    if (!ms || ms <= 0) return '--.--'
+    const s2 = Math.floor(ms / 1000), t = Math.floor((ms % 1000) / 10)
+    return `${s2}.${t.toString().padStart(2, '0')}`
+  }
+  const text = first
+    ? fmtSplit(s.split)
+    : (d! <= 0 ? '-' : '+') + (Math.abs(d!) / 1000).toFixed(2)
   return (
     <div key={s.key} class={`split-delta ${cls}`}>
-      <span class="split-cp">CP {s.cp}/{s.total}</span>
+      <span class="split-cp">CP {s.cp}/{s.total}{first ? ' · REF LAP' : ''}</span>
       <span class="split-val">{text}</span>
     </div>
   )
@@ -411,7 +419,7 @@ export function App() {
   const [warmup, setWarmup] = useState<WarmupState>({ remaining: 0, total: 0 })
   const [lobby, setLobby] = useState<LobbyState>({ mode: 'hidden' })
   const [sectors, setSectors] = useState<(SectorEntry | null)[]>([null, null, null])
-  const [split, setSplit] = useState<{ delta: number | null; cp: number; total: number; key: number } | null>(null)
+  const [split, setSplit] = useState<{ delta: number | null; split?: number; cp: number; total: number; key: number } | null>(null)
   const [showStandings, setShowStandings] = useState(true)
 
   // Auto-hide the split delta a few seconds after each crossing
@@ -636,6 +644,7 @@ export function App() {
         case 'splitDelta':
           setSplit({
             delta: data.delta ?? null,
+            split: data.split ?? 0,
             cp: data.cp ?? 0,
             total: data.total ?? 0,
             key: Date.now(),
@@ -725,6 +734,7 @@ export function App() {
           <div class="hud-left">
             {showStandings && <Standings positions={overlay.positions || []} mySource={overlay.mySource} />}
             <SectorStrip sectors={sectors} />
+            {split && <SplitDelta s={split} />}
           </div>
           <Telemetry data={overlay} />
         </div>
@@ -733,8 +743,6 @@ export function App() {
       {showOverlay && !overlay.isTT && (
         <CPWaypointBillboard wp={cpWp} />
       )}
-
-      {split && <SplitDelta s={split} />}
 
       <WarmupPanel wu={warmup} />
       <LobbyPill lb={lobby} />
