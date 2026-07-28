@@ -1389,47 +1389,47 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.07);
 }
 
-/* ── Split delta tower (time trial) ─────────────────────────── */
+/* ── Split delta chip — docked under the sector strip ───────── */
 .split-delta {
-  position: absolute;
-  top: 20%;
-  left: 50%;
-  transform: translateX(-50%);
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: 8px 22px;
-  border-radius: 8px;
-  background: rgba(6, 7, 9, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 4px 10px;
+  border-radius: 5px;
+  background: rgba(6, 7, 9, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-left: 2px solid rgba(255, 255, 255, 0.15);
   pointer-events: none;
-  animation: split-pop 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+  animation: split-pop 0.22s cubic-bezier(0.16, 1, 0.3, 1),
              split-fade 0.4s ease 2.8s forwards;
 }
 @keyframes split-pop {
-  from { opacity: 0; transform: translateX(-50%) scale(0.85) translateY(-6px); }
-  to   { opacity: 1; transform: translateX(-50%) scale(1) translateY(0); }
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes split-fade { to { opacity: 0; } }
 
 .split-cp {
   font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.14em;
+  font-size: 8px;
+  letter-spacing: 0.1em;
   color: rgba(255, 255, 255, 0.45);
+  white-space: nowrap;
 }
 .split-val {
   font-family: var(--font-display);
-  font-size: 30px;
-  font-weight: 900;
+  font-size: 15px;
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
-.split-delta.ahead  .split-val { color: #b76cff; }         /* faster than best  */
-.split-delta.behind .split-val { color: var(--color-warning); } /* slower       */
-.split-delta.even   .split-val { color: #fff; }            /* within 5 ms       */
-.split-delta.first  .split-val { color: var(--color-success); } /* no best yet  */
+.split-delta.ahead  .split-val { color: #b76cff; }              /* faster */
+.split-delta.behind .split-val { color: var(--color-warning); } /* slower */
+.split-delta.even   .split-val { color: #fff; }                 /* even   */
+.split-delta.first  .split-val { color: var(--color-success); } /* ref lap */
 
-.split-delta.ahead  { border-color: rgba(183, 108, 255, 0.4); }
-.split-delta.behind { border-color: rgba(255, 204, 0, 0.35); }
+.split-delta.ahead  { border-left-color: #b76cff; }
+.split-delta.behind { border-left-color: var(--color-warning); }
+.split-delta.first  { border-left-color: var(--color-success); }
