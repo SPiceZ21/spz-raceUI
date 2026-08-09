@@ -1,37 +1,51 @@
 # spz-raceUI
-> Race UI — Countdown, standings overlay, post-race stats · `v1.1.1`
 
-## Scripts
+> Countdown, in-race overlay, split deltas, post-race stats · `v2.0.0`
 
-| Side   | File              | Purpose                                               |
-| ------ | ----------------- | ----------------------------------------------------- |
-| Client | `client/main.lua` | Export handlers, NUI bridge, overlay state management |
+## Overview
 
-## NUI
+`spz-raceUI` is the in-race HUD. It renders the start countdown, the standings overlay,
+the 3D checkpoint pill and distance, sector and split feedback, the warmup lobby, and the
+post-race results screen. It holds no race logic — everything is pushed in through exports
+by [spz-races](../spz-races/README.md).
 
-**Stack:** Vite · Preact · TypeScript · spz-ui
+## Structure
 
-```
-ui/
-├── src/
-│   ├── app.tsx
-│   ├── components/       # spz-ui components
-│   └── styles/
-└── dist/                 # built output (served by FiveM)
-    └── index.html
-```
-
-Build: `cd ui && npm run build`
+| Side | File | Purpose |
+|---|---|---|
+| Client | `client/main.lua` | Export handlers, NUI bridge, overlay state |
 
 ## Exports
 
-| Export                  | Description                                          |
-| ----------------------- | ---------------------------------------------------- |
-| `ShowCountdown`         | Display the race start countdown sequence            |
-| `UpdateRaceOverlay`     | Push updated standings data to the in-race overlay   |
-| `SetRaceOverlayVisible` | Show or hide the standings overlay                   |
-| `HideAll`               | Hide all race UI elements                            |
-| `ShowPostRaceStats`     | Display the post-race results and stats screen       |
+| Group | Exports |
+|---|---|
+| Countdown / lobby | `ShowCountdown` · `ShowWarmup` · `HideWarmup` · `UpdateLobby` |
+| Overlay | `UpdateRaceOverlay` · `SetRaceOverlayVisible` · `HideAll` |
+| Checkpoints | `UpdateCPDistance` · `UpdateCPWaypoint` |
+| Sectors / splits | `UpdateSector` · `ResetSectors` · `ShowSplitDelta` |
+| Time trial | `TT_UpdateHUD` · `TT_Broadcast` · `TT_Hide` |
+| Results | `ShowPostRaceStats` |
 
-## CI
-Built and released via `.github/workflows/release.yml` on push to `main`.
+```lua
+exports['spz-raceUI']:UpdateRaceOverlay(standings)
+```
+
+## NUI
+
+Vite · Preact · TypeScript on the [spz-ui](../spz-ui/README.md) component set.
+
+```bash
+cd ui && npm install && npm run build   # → ui/dist/index.html
+```
+
+## Commands
+
+`/standingstoggle`
+
+## Dependencies
+
+None beyond FiveM. Driven by `spz-races`.
+
+---
+
+Part of [SPiceZ-Core](../README.md) · GPL-3.0
