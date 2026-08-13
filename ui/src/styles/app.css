@@ -106,6 +106,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  transform: scale(1.1);            /* +10% HUD */
+  transform-origin: top left;
 }
 
 .standings-list {
@@ -176,7 +178,7 @@ body {
 .racer-name {
   flex: 1;
   min-width: 0;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -190,15 +192,15 @@ body {
 /* time difference — small boxed chip on the right */
 .racer-gap-box {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.02em;
   color: rgba(255, 255, 255, 0.55);
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 3px;
-  padding: 1px 5px;
-  min-width: 40px;
+  padding: 2px 6px;
+  min-width: 48px;
   text-align: center;
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
@@ -222,6 +224,8 @@ body {
   align-items: flex-end;
   gap: 8px;
   text-align: right;
+  transform: scale(1.1);            /* +10% HUD */
+  transform-origin: top right;
 }
 
 .telemetry-row {
@@ -1013,17 +1017,17 @@ body {
   display: flex;
   align-items: baseline;
   justify-content: center;
-  gap: 2px;
-  min-width: 58px;
-  padding: 3px 8px;
-  border-radius: 4px;
+  gap: 3px;
+  min-width: 82px;
+  padding: 5px 12px;
+  border-radius: 6px;
   background: rgba(6, 7, 9, 0.55);
   border: 1px solid rgba(255, 255, 255, 0.10);
   transition: border-color 200ms ease, background 200ms ease;
 }
 .cp-chip-val {
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: 28px;
   font-weight: 900;
   font-style: italic;
   line-height: 1;
@@ -1032,7 +1036,7 @@ body {
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
 }
 .cp-chip-unit {
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.06em;
   color: rgba(255, 255, 255, 0.5);
