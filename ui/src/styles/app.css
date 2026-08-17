@@ -102,7 +102,9 @@ body {
   position: absolute;
   top: 32px;
   left: 32px;
-  width: 210px;
+  /* Wide enough for a full driver name — at 210px anything past ~6 characters
+     ellipsised, so most of the field read as "DRIFT…" / "REDLI…". */
+  width: 272px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -122,14 +124,29 @@ body {
   gap: 10px;
   height: 24px;
   padding: 0 10px;
-  background: rgba(6, 7, 9, 0.7);
+  /* Near-solid across the content, then a short hard falloff at the tail. The
+     earlier version started fading at the halfway point, which left the name
+     sitting on a muddy half-tone and the gap chip floating on nothing. */
+  background: linear-gradient(to right,
+              rgba(3, 4, 6, 0.92) 0%,
+              rgba(3, 4, 6, 0.90) 68%,
+              rgba(3, 4, 6, 0.48) 88%,
+              rgba(3, 4, 6, 0.00) 100%);
   border-left: 2px solid rgba(255, 255, 255, 0.18);
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .racer-row.is-me {
-  /* orange fades in from the right, transparent toward the left */
-  background: linear-gradient(to left, rgba(255, 98, 0, 0.38), rgba(255, 98, 0, 0.04));
+  /* Orange sweeps in from the left off the accent bar, so the highlight starts
+     where the eye lands instead of behind the gap chip. */
+  background:
+    linear-gradient(to right, rgba(255, 98, 0, 0.40) 0%,
+                              rgba(255, 98, 0, 0.16) 62%,
+                              rgba(255, 98, 0, 0.00) 92%),
+    linear-gradient(to right, rgba(3, 4, 6, 0.92) 0%,
+                              rgba(3, 4, 6, 0.90) 68%,
+                              rgba(3, 4, 6, 0.48) 88%,
+                              rgba(3, 4, 6, 0.00) 100%);
   border-left-color: var(--color-primary);
 }
 
@@ -217,50 +234,55 @@ body {
   position: absolute;
   top: 32px;
   right: 32px;
-  width: auto;
-  max-width: 420px;
+  width: 268px;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
+  align-items: stretch;
+  gap: 7px;
   text-align: right;
   transform: scale(1.1);            /* +10% HUD */
   transform-origin: top right;
 }
 
-.telemetry-row {
+/* ── Head: lap leads, position sits opposite ─────────────── */
+/* The lap number is the fact a driver checks most often, so it is the largest
+   thing after the clock — it used to be 10px of dim grey. */
+
+.tele-head {
   display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
+  align-items: flex-end;
+  justify-content: space-between;
+  line-height: 1;
 }
 
-.tele-stat {
+.lap-box {
   display: flex;
-  align-items: center;
-  gap: 4px;
+  align-items: baseline;
+  gap: 5px;
+}
+.lap-box .lap-label {
   font-size: 10px;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.45);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  color: rgba(255, 255, 255, 0.4);
 }
-
-.tele-stat .val {
+.lap-box .lap-now {
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: 26px;
+  font-weight: 900;
   color: #fff;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+.lap-box .lap-of {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.4);
   font-variant-numeric: tabular-nums;
 }
 
-.timer-block {
-  display: inline-flex;
-  align-items: baseline;          /* align pos chip baseline to lap timer baseline */
-  gap: 10px;
-  align-self: flex-end;
-  flex-shrink: 0;
-}
-
+/* Position — the original bordered chip. */
 .pos-chip {
   display: inline-flex;
   align-items: baseline;
@@ -270,7 +292,6 @@ body {
   border-radius: 3px;
   padding: 3px 7px;
   flex-shrink: 0;
-  transform: translateY(-10px);   /* nudge pos chip up to sit near timer cap height */
 }
 .pos-chip .chip-label {
   font-size: 8px;
@@ -288,112 +309,133 @@ body {
   font-style: italic;
 }
 
-.timer-section {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-  flex-shrink: 0;
-}
+/* ── Hero clock ──────────────────────────────────────────── */
 
-.lap-timer {
+.timer-hero {
   font-family: var(--font-display);
-  font-size: 48px;
+  font-size: 46px;
   font-weight: 900;
-  letter-spacing: 0;
   color: #fff;
-  text-shadow: 0 2px 10px rgba(0,0,0,0.6);
-  line-height: 1;
-  text-align: right;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.65);
+  line-height: 0.95;
   display: flex;
   justify-content: flex-end;
   white-space: nowrap;
-  flex-shrink: 0;
 }
 
-/* Per-digit fixed-width slots — kills wiggle while keeping Panchang.
-   Slot width must be ≥ widest glyph at this weight. 0 / 8 at 900 weight ≈ 0.85em. */
-.lap-timer .tdig,
-.race-timer-total .tdig,
-.lap-timer .tsep,
-.race-timer-total .tsep {
+/* Per-digit fixed-width slots — kills wiggle while keeping Panchang. */
+.timer-hero .tdig,
+.timer-hero .tsep {
   display: inline-block;
   text-align: center;
   flex-shrink: 0;
   overflow: visible;
 }
-.lap-timer .tdig { width: 1.15em; }
-.lap-timer .tsep { width: 0.55em; }
-.race-timer-total .tdig { width: 1.08em; }
-.race-timer-total .tsep { width: 0.50em; }
+.timer-hero .tdig { width: 1.15em; }
+.timer-hero .tsep { width: 0.55em; }
 
-/* Total race time — small secondary line below the big lap timer */
-.race-timer-total {
-  display: flex;
-  align-items: baseline;
-  justify-content: flex-end;
-  gap: 6px;
-  margin-top: 2px;
-  line-height: 1;
-  white-space: nowrap;
+
+/* ── Lap progress + meta line ────────────────────────────── */
+
+/* ── Checkpoint track ────────────────────────────────────── */
+/* The bar and the count were two separate things saying the same thing. Now the
+   count sits on the bar: one element, and the fill reads as progress behind it. */
+
+.cp-track {
+  position: relative;
+  width: 100%;
+  height: 22px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  overflow: hidden;
 }
-.race-timer-total .rtt-label {
-  font-family: var(--font-display);
+.cp-track-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(90deg,
+              rgba(255, 98, 0, 0.30),
+              rgba(255, 98, 0, 0.55));
+  border-right: 1px solid rgba(255, 145, 66, 0.9);
+  transition: width 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.cp-track-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 3px;
+  padding: 0 8px;
+  line-height: 1;
+}
+.cp-track-text .cp-word {
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.14em;
-  color: rgba(255, 255, 255, 0.45);
-  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+  margin-right: 2px;
 }
-.race-timer-total .rtt-value {
+.cp-track-text .cp-now {
   font-family: var(--font-display);
   font-size: 14px;
+  font-weight: 900;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+.cp-track-text .cp-of {
+  font-family: var(--font-display);
+  font-size: 11px;
   font-weight: 800;
-  color: rgba(255, 255, 255, 0.75);
-  text-align: right;
-  display: inline-flex;
+  color: rgba(255, 255, 255, 0.45);
+  font-variant-numeric: tabular-nums;
 }
 
-.delta-pill {
+/* ── Total race time ─────────────────────────────────────── */
+
+.total-row {
   display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 10px;
-  font-weight: 800;
-  font-family: monospace;
-  padding: 2px 6px;
-  border-radius: 3px;
-  letter-spacing: 0.02em;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
-  margin-top: 1px;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 7px;
   line-height: 1;
 }
-.delta-pill.faster {
-  background: rgba(0, 255, 157, 0.1);
-  border: 1px solid rgba(0, 255, 157, 0.2);
-  color: var(--color-success);
+.total-row .total-label {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  color: rgba(255, 255, 255, 0.38);
 }
-.delta-pill.slower {
-  background: rgba(255, 61, 113, 0.1);
-  border: 1px solid rgba(255, 61, 113, 0.2);
-  color: var(--color-danger);
+.total-row .total-val {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.82);
+  font-variant-numeric: tabular-nums;
 }
 
-.cp-bar {
-  width: 100%;
-  min-width: 240px;
-  height: 3px;
-  background: rgba(255,255,255,0.06);
-  border-radius: 99px;
-  overflow: hidden;
-  margin-top: 2px;
+/* ── Reference times ─────────────────────────────────────── */
+/* One quiet row. PB lifts only while the current lap is actually under it. */
+
+.ref-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.3);
 }
-.cp-bar-fill {
-  height: 100%;
-  background: var(--color-primary);
-  border-radius: 99px;
-  transition: width 200ms ease;
+.ref b {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-left: 4px;
+  font-variant-numeric: tabular-nums;
 }
+
 
 /* ── Sector strip — broadcast timing bar ─────────────────── */
 /* Sim-racing convention: purple = session best, green = own best,
@@ -412,7 +454,9 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(8, 9, 12, 0.88);
+  /* Vertical fall so each chip reads as one surface. A horizontal fade made
+     the three cells look like three separate smears. */
+  background: linear-gradient(180deg, rgba(14, 16, 20, 0.90), rgba(3, 4, 6, 0.92));
   border: 1px solid rgba(255, 255, 255, 0.04);
   border-radius: 4px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
@@ -451,7 +495,11 @@ body {
 }
 
 .sector-cell.purple {
-  background: rgba(164, 91, 255, 0.15);
+  background:
+    linear-gradient(0deg, rgba(164, 91, 255, 0.30) 0%,
+                          rgba(164, 91, 255, 0.06) 70%,
+                          rgba(164, 91, 255, 0.02) 100%),
+    linear-gradient(180deg, rgba(14, 16, 20, 0.90), rgba(3, 4, 6, 0.92));
   border-color: rgba(164, 91, 255, 0.3);
   box-shadow: 0 4px 16px rgba(164, 91, 255, 0.2);
   animation: sec-pop 320ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -460,7 +508,11 @@ body {
 .sector-cell.purple .sector-time  { color: #cda2ff; font-weight: 400; }
 
 .sector-cell.green {
-  background: rgba(0, 224, 135, 0.15);
+  background:
+    linear-gradient(0deg, rgba(0, 224, 135, 0.30) 0%,
+                          rgba(0, 224, 135, 0.06) 70%,
+                          rgba(0, 224, 135, 0.02) 100%),
+    linear-gradient(180deg, rgba(14, 16, 20, 0.90), rgba(3, 4, 6, 0.92));
   border-color: rgba(0, 224, 135, 0.3);
   box-shadow: 0 4px 16px rgba(0, 224, 135, 0.2);
   animation: sec-pop 320ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -469,7 +521,11 @@ body {
 .sector-cell.green .sector-time  { color: #7dffc4; font-weight: 400; }
 
 .sector-cell.yellow {
-  background: rgba(255, 196, 0, 0.15);
+  background:
+    linear-gradient(0deg, rgba(255, 196, 0, 0.30) 0%,
+                          rgba(255, 196, 0, 0.06) 70%,
+                          rgba(255, 196, 0, 0.02) 100%),
+    linear-gradient(180deg, rgba(14, 16, 20, 0.90), rgba(3, 4, 6, 0.92));
   border-color: rgba(255, 196, 0, 0.3);
   box-shadow: 0 4px 16px rgba(255, 196, 0, 0.15);
   animation: sec-pop 320ms cubic-bezier(0.16, 1, 0.3, 1);

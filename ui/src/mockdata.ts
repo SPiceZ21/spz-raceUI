@@ -21,13 +21,22 @@ export const MOCK_RACE_DATA = {
     delta: -0.450,
     myPosition: 2,
     isTT: false,
+    totalRaceTime: 158240,
     positions: [
-      { source: 2, name: "DRIFT_KING", position: 1, gap: "+1.25s", avatar: "https://i.ibb.co/F8bBfPy/helmet-gold.png", licenseClass: "S" },
-      { source: 1, name: "SPICEZ", position: 2, gap: "YOU", avatar: "https://raw.githubusercontent.com/SPiceZ21/spz-core-media-kit/main/Extra/nametag_profile.png", licenseClass: "S" },
-      { source: 3, name: "SHADOW_GRID", position: 3, gap: "+3.42s", avatar: "https://i.ibb.co/qDxgS5j/helmet-blue.png", licenseClass: "A" },
-      { source: 4, name: "TURBO_RACER", position: 4, gap: "+5.10s", avatar: "https://i.ibb.co/313zWqj/helmet-red.png", licenseClass: "B" }
+      { source: 2, name: "DRIFT_KING",  position: 1, gap: "LEADER", licenseClass: "S", nation: "jp", raceNumber: 7,  crew_tag: "[APX]" },
+      { source: 1, name: "SPICEZ",      position: 2, gap: "+1.25",  licenseClass: "S", nation: "in", raceNumber: 21, crew_tag: "[NR]" },
+      { source: 3, name: "SHADOW_GRID", position: 3, gap: "+3.42",  licenseClass: "A", nation: "de", raceNumber: 44, crew_tag: "[NR]" },
+      { source: 4, name: "TURBO_RACER", position: 4, gap: "+5.10",  licenseClass: "B", nation: "br", raceNumber: 3 },
+      { source: 5, name: "NIGHT_OWL",   position: 5, gap: "+8.77",  licenseClass: "B", nation: "gb", raceNumber: 18 },
+      { source: 6, name: "REDLINE",     position: 6, gap: "+12.03", licenseClass: "C", nation: "us", raceNumber: 96 }
     ]
   },
+  sectors: [
+    { time: 24310, colour: "purple", delta: -0.212 },
+    { time: 28094, colour: "yellow", delta:  0.084 },
+    null
+  ],
+  cpWaypoint: { dist: 184, onScreen: true, x: 0.62, y: 0.44 },
   postRace: {
     trackName: "DOWNTOWN GRAND PRIX",
     finishTime: "03:42.50",
