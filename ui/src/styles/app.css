@@ -234,13 +234,12 @@ body {
   position: absolute;
   top: 32px;
   right: 32px;
-  width: 268px;
+  width: 232px;
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 7px;
+  gap: 6px;
   text-align: right;
-  transform: scale(1.1);            /* +10% HUD */
   transform-origin: top right;
 }
 
@@ -261,14 +260,14 @@ body {
   gap: 5px;
 }
 .lap-box .lap-label {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.16em;
   color: rgba(255, 255, 255, 0.4);
 }
 .lap-box .lap-now {
   font-family: var(--font-display);
-  font-size: 26px;
+  font-size: 22px;
   font-weight: 900;
   color: #fff;
   font-variant-numeric: tabular-nums;
@@ -276,7 +275,7 @@ body {
 }
 .lap-box .lap-of {
   font-family: var(--font-display);
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 800;
   color: rgba(255, 255, 255, 0.4);
   font-variant-numeric: tabular-nums;
@@ -290,7 +289,7 @@ body {
   background: rgba(255, 98, 0, 0.10);
   border: 1px solid rgba(255, 98, 0, 0.35);
   border-radius: 3px;
-  padding: 3px 7px;
+  padding: 2px 6px;
   flex-shrink: 0;
 }
 .pos-chip .chip-label {
@@ -302,7 +301,7 @@ body {
 }
 .pos-chip .chip-val {
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 19px;
   font-weight: 900;
   color: var(--color-primary);
   line-height: 1;
@@ -313,7 +312,7 @@ body {
 
 .timer-hero {
   font-family: var(--font-display);
-  font-size: 46px;
+  font-size: 38px;
   font-weight: 900;
   color: #fff;
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.65);
@@ -344,7 +343,7 @@ body {
 .cp-track {
   position: relative;
   width: 100%;
-  height: 22px;
+  height: 19px;
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.05);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
@@ -370,7 +369,7 @@ body {
   line-height: 1;
 }
 .cp-track-text .cp-word {
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 800;
   letter-spacing: 0.14em;
   color: rgba(255, 255, 255, 0.5);
@@ -378,14 +377,14 @@ body {
 }
 .cp-track-text .cp-now {
   font-family: var(--font-display);
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 900;
   color: #fff;
   font-variant-numeric: tabular-nums;
 }
 .cp-track-text .cp-of {
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
   color: rgba(255, 255, 255, 0.45);
   font-variant-numeric: tabular-nums;
@@ -401,14 +400,14 @@ body {
   line-height: 1;
 }
 .total-row .total-label {
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 800;
   letter-spacing: 0.16em;
   color: rgba(255, 255, 255, 0.38);
 }
 .total-row .total-val {
   font-family: var(--font-display);
-  font-size: 19px;
+  font-size: 16px;
   font-weight: 800;
   color: rgba(255, 255, 255, 0.82);
   font-variant-numeric: tabular-nums;
@@ -422,7 +421,7 @@ body {
   align-items: center;
   justify-content: flex-end;
   gap: 12px;
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 800;
   letter-spacing: 0.1em;
   color: rgba(255, 255, 255, 0.3);
@@ -430,7 +429,7 @@ body {
 .ref b {
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 11px;
+  font-size: 10px;
   color: rgba(255, 255, 255, 0.6);
   margin-left: 4px;
   font-variant-numeric: tabular-nums;
