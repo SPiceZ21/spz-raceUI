@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'preact/hooks'
-import { TrendingUp, TrendingDown } from 'lucide-preact'
+
 import { ProgressionStrip } from './components/ProgressionStrip'
 import './styles/app.css'
 
@@ -130,7 +130,6 @@ interface OverlayState {
   currentLapTime?: number
   totalRaceTime?: number
   formattedTime?: string
-  delta?: number
   myPosition?: number | string
   isTT?: boolean
 }
@@ -171,7 +170,10 @@ const Standings = ({ positions, mySource }: { positions: RacerEntry[], mySource?
 
 /* ── Telemetry ─────────────────────────────────────────────── */
 
-const Telemetry = ({ data }: { data: OverlayState }) => {
+const Telemetry = ({ data, split }: {
+  data: OverlayState
+  split: { delta: number | null; split?: number; cp: number; total: number; key: number } | null
+}) => {
   const totalCPs = data.totalCheckpoints || 0
   const cpPct = totalCPs > 0 ? ((data.checkpoint || 1) / totalCPs) * 100 : 0
   const displayTime = data.formattedTime || formatTime(data.currentLapTime || 0)
@@ -183,51 +185,51 @@ const Telemetry = ({ data }: { data: OverlayState }) => {
 
   const displayBest = data.bestLapTime && data.bestLapTime > 0
     ? (typeof data.bestLapTime === 'string' ? data.bestLapTime : formatTime(data.bestLapTime))
-    : '--:--.---'
-
-  const displayAllTime = data.allTimeBest && data.allTimeBest > 0
-    ? (typeof data.allTimeBest === 'string' ? data.allTimeBest : formatTime(data.allTimeBest))
-    : '--:--.---'
+    : '--.---'
 
   const posLabel = data.myPosition || '1'
 
   return (
     <div class="telemetry-hud">
-      <div class="telemetry-row">
-        <div class="tele-stat">LAP <span class="val">{data.lapNum || 1}/{data.totalLaps || '1'}</span></div>
-        <div class="tele-stat">CP <span class="val">{data.checkpoint || 1}/{totalCPs || '?'}</span></div>
-      </div>
-
-      <div class="timer-block">
+      {/* Lap is the single most glanceable fact in a race — it leads. */}
+      <div class="tele-head">
+        <div class="lap-box">
+          <span class="lap-label">LAP</span>
+          <span class="lap-now">{data.lapNum || 1}</span>
+          <span class="lap-of">/{data.totalLaps || 1}</span>
+        </div>
         <div class="pos-chip">
           <span class="chip-label">POS</span>
           <span class="chip-val">{posLabel}</span>
         </div>
-        <div class="timer-section">
-          <div class="lap-timer"><TimeDigits text={displayTime} /></div>
-          {isLapRace && (
-            <div class="race-timer-total">
-              <span class="rtt-label">TOTAL</span>
-              <span class="rtt-value"><TimeDigits text={displayTotal} /></span>
-            </div>
-          )}
-          {data.delta !== undefined && (
-            <div class={`delta-pill ${data.delta <= 0 ? 'faster' : 'slower'}`}>
-              {data.delta <= 0 ? <TrendingDown size={11} /> : <TrendingUp size={11} />}
-              <span>{data.delta <= 0 ? '' : '+'}{data.delta.toFixed(3)}</span>
-            </div>
-          )}
+      </div>
+
+      <div class="timer-hero"><TimeDigits text={displayTime} /></div>
+
+      {/* Checkpoint progress: the bar IS the checkpoint readout, so the count
+          rides on it instead of repeating as loose text underneath. */}
+      <div class="cp-track">
+        <div class="cp-track-fill" style={{ width: `${cpPct}%` }} />
+        <div class="cp-track-text">
+          <span class="cp-word">CP</span>
+          <span class="cp-now">{data.checkpoint || 1}</span>
+          <span class="cp-of">/{totalCPs || '?'}</span>
         </div>
       </div>
 
-      <div class="cp-bar">
-        <div class="cp-bar-fill" style={{ width: `${cpPct}%` }} />
+      {/* Elapsed race time — a real readout, not a footnote. */}
+      {isLapRace && (
+        <div class="total-row">
+          <span class="total-label">TOTAL</span>
+          <span class="total-val">{displayTotal}</span>
+        </div>
+      )}
+
+      <div class="ref-row">
+        <span class="ref">PB <b>{displayBest}</b></span>
       </div>
 
-      <div class="best-laps-container">
-        <div class="best-tag pb">PB: {displayBest}</div>
-        <div class="best-tag tr">RECORD: {displayAllTime}</div>
-      </div>
+      {split && <SplitDelta s={split} />}
     </div>
   )
 }
@@ -497,16 +499,49 @@ export function App() {
 
   useEffect(() => {
     if (typeof GetParentResourceName === 'undefined') {
+      // Browser preview. Showing every state at once stacks the countdown, the
+      // HUD and the results card on top of each other, which is not a layout any
+      // player ever sees — pick ONE scene with ?scene=… so each can be judged on
+      // its own. Defaults to the live race HUD.
+      const qs = new URLSearchParams(location.search)
+      const scene = qs.get('scene') || 'race'
+
       import('./mockdata').then(m => {
-        setCountdown(m.MOCK_RACE_DATA.countdown)
-        setShowCountdown(true)
+        const D = m.MOCK_RACE_DATA
 
-        setOverlay(m.MOCK_RACE_DATA.overlay)
+        if (scene === 'countdown') {
+          setCountdown(D.countdown)
+          setShowCountdown(true)
+          return
+        }
+
+        if (scene === 'results') {
+          setPostRace(D.postRace)
+          showStatsRef.current = true
+          setShowStats(true)
+          return
+        }
+
+        // race (default) — the HUD as it looks mid-lap
+        setOverlay(D.overlay)
         setShowOverlay(true)
-
-        setPostRace(m.MOCK_RACE_DATA.postRace)
-        showStatsRef.current = true
-        setShowStats(true)
+        setSectors((D as any).sectors ?? [null, null, null])
+        if ((D as any).warmup) setWarmup((D as any).warmup)
+        if ((D as any).lobby) setLobby((D as any).lobby)
+        // Checkpoint pill overrides so it can be placed clear of the HUD corners
+        // while judging it: ?cp=none hides it, ?dist=&x=&y= reposition it.
+        const cpMode = qs.get('cp')
+        if (cpMode !== 'none') {
+          const base = (D as any).cpWaypoint
+          if (base) {
+            setCpWp({
+              ...base,
+              dist: Number(qs.get('dist') ?? base.dist ?? 184),
+              ...(qs.get('x') ? { x: Number(qs.get('x')) } : {}),
+              ...(qs.get('y') ? { y: Number(qs.get('y')) } : {}),
+            })
+          }
+        }
       })
       return
     }
@@ -729,14 +764,13 @@ export function App() {
 
       {showOverlay && (
         <div class="hud-layer">
-          {/* Left column: standings with the sector strip docked under it.
+          {/* Left column: running order with the sector strip docked under it.
               Hiding the list (Z) lets the strip slide up to the top slot. */}
           <div class="hud-left">
             {showStandings && <Standings positions={overlay.positions || []} mySource={overlay.mySource} />}
             <SectorStrip sectors={sectors} />
-            {split && <SplitDelta s={split} />}
           </div>
-          <Telemetry data={overlay} />
+          <Telemetry data={overlay} split={split} />
         </div>
       )}
 
