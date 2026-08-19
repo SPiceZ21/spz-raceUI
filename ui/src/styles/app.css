@@ -234,7 +234,7 @@ body {
   position: absolute;
   top: 32px;
   right: 32px;
-  width: 232px;
+  width: 206px;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -267,7 +267,7 @@ body {
 }
 .lap-box .lap-now {
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 19px;
   font-weight: 900;
   color: #fff;
   font-variant-numeric: tabular-nums;
@@ -301,7 +301,7 @@ body {
 }
 .pos-chip .chip-val {
   font-family: var(--font-display);
-  font-size: 19px;
+  font-size: 17px;
   font-weight: 900;
   color: var(--color-primary);
   line-height: 1;
@@ -312,7 +312,7 @@ body {
 
 .timer-hero {
   font-family: var(--font-display);
-  font-size: 38px;
+  font-size: 33px;
   font-weight: 900;
   color: #fff;
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.65);
@@ -343,7 +343,7 @@ body {
 .cp-track {
   position: relative;
   width: 100%;
-  height: 19px;
+  height: 17px;
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.05);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
@@ -407,7 +407,7 @@ body {
 }
 .total-row .total-val {
   font-family: var(--font-display);
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 800;
   color: rgba(255, 255, 255, 0.82);
   font-variant-numeric: tabular-nums;
