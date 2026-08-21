@@ -342,6 +342,28 @@ const LobbyPill = ({ lb }: { lb: LobbyState }) => {
   )
 }
 
+/* ── Rewind timeline (Forza-style scrub bar) ──────────────── */
+
+interface RewindState {
+  active: boolean
+  secondsBack?: number
+  fraction?: number       // 0..1 of the buffer scrubbed so far
+  bufferSeconds?: number
+}
+
+const RewindTimeline = ({ rw }: { rw: RewindState }) => {
+  if (!rw || !rw.active) return null
+  const pct = Math.max(0, Math.min(1, rw.fraction ?? 0)) * 100
+  return (
+    <div class="rewind-panel">
+      <div class="rewind-track">
+        <div class="rewind-track-fill" style={{ width: `${pct}%` }} />
+        <div class="rewind-track-head" style={{ left: `${pct}%` }} />
+      </div>
+    </div>
+  )
+}
+
 /* ── Post-Race Stats ───────────────────────────────────────── */
 
 const PostRace = ({ data, autoClose }: { data: any, autoClose: number, onDismiss: () => void }) => {
@@ -420,6 +442,7 @@ export function App() {
   const [cpWp, setCpWp] = useState<CPWaypoint>({ dist: 0, onScreen: false, x: 0.5, y: 0.5 })
   const [warmup, setWarmup] = useState<WarmupState>({ remaining: 0, total: 0 })
   const [lobby, setLobby] = useState<LobbyState>({ mode: 'hidden' })
+  const [rewind, setRewind] = useState<RewindState>({ active: false })
   const [sectors, setSectors] = useState<(SectorEntry | null)[]>([null, null, null])
   const [split, setSplit] = useState<{ delta: number | null; split?: number; cp: number; total: number; key: number } | null>(null)
   const [showStandings, setShowStandings] = useState(true)
@@ -713,6 +736,15 @@ export function App() {
           setWarmup({ remaining: 0, total: 0 })
           break
 
+        case 'rewind':
+          setRewind({
+            active: !!data.active,
+            secondsBack: data.secondsBack ?? 0,
+            fraction: data.fraction ?? 0,
+            bufferSeconds: data.bufferSeconds ?? 10,
+          })
+          break
+
         case 'lobby':
           setLobby({
             mode: data.mode ?? 'hidden',
@@ -740,6 +772,7 @@ export function App() {
           setShowCountdown(false)
           setShowStats(false)
           setWarmup({ remaining: 0, total: 0 })
+          setRewind({ active: false })
           break
       }
     }
@@ -780,6 +813,7 @@ export function App() {
 
       <WarmupPanel wu={warmup} />
       <LobbyPill lb={lobby} />
+      <RewindTimeline rw={rewind} />
 
       {showStats && postRace && (
         <PostRace data={postRace} autoClose={autoClose} onDismiss={dismissStats} />
