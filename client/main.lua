@@ -192,6 +192,15 @@ local function UpdateLobby(data)
     SendNUIMessage({ action = 'lobby', data = data or {} })
 end
 
+-- Rewind timeline — data = { active, secondsBack, fraction (0..1), bufferSeconds }
+local function UpdateRewind(data)
+    SendNUIMessage({ action = 'rewind', data = data or {} })
+end
+
+local function HideRewind()
+    SendNUIMessage({ action = 'rewind', data = { active = false } })
+end
+
 -- Exports
 exports('ShowCountdown', ShowCountdown)
 exports('UpdateRaceOverlay', UpdateRaceOverlay)
@@ -202,6 +211,8 @@ exports('ResetSectors', ResetSectors)
 exports('ShowWarmup', ShowWarmup)
 exports('HideWarmup', HideWarmup)
 exports('UpdateLobby', UpdateLobby)
+exports('UpdateRewind', UpdateRewind)
+exports('HideRewind', HideRewind)
 exports('SetRaceOverlayVisible', SetRaceOverlayVisible)
 exports('HideAll', HideAll)
 exports('ShowPostRaceStats', ShowPostRaceStats)

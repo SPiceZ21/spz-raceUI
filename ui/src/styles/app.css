@@ -1259,6 +1259,42 @@ body {
   50%      { opacity: 0.4; }
 }
 
+/* ── Rewind timeline (bottom-center scrub bar, minimal) ────── */
+.rewind-panel {
+  position: fixed;
+  bottom: 6vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 220px;
+  pointer-events: none;
+  z-index: 40;
+  animation: rt-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.rewind-track {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 99px;
+  overflow: visible;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+.rewind-track-fill {
+  height: 100%;
+  background: var(--color-secondary);
+  border-radius: 99px;
+}
+.rewind-track-head {
+  position: absolute;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
+  transform: translate(-50%, -50%);
+}
+
 /* ── Post-race results — compact, non-blocking toast ───────── */
 .results-toast {
   position: fixed;
