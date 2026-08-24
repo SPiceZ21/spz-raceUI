@@ -28,3 +28,7 @@ exports {
     'ShowPostRaceStats'
 }
 
+dependencies {
+    'spz-core',
+}
+

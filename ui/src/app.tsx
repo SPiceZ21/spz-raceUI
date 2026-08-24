@@ -17,6 +17,33 @@ function post(action: string, data: object = {}) {
   }).catch(() => { })
 }
 
+// Base theme (server.cfg spz_theme_* convars, pushed from spz-core) mapped
+// onto this page's own CSS variable names (theme.css). Unknown/missing keys
+// are a no-op since the stylesheet's own defaults still apply.
+const THEME_VARS: Record<string, string> = {
+  accent: '--color-primary',
+  accent2: '--color-secondary',
+  bg: '--bg-app',
+  bg2: '--bg-card',
+}
+// rgba(...) glows/tints reference the accent as raw components so they can
+// carry their own alpha — keep those in sync too.
+const THEME_RGB_VARS: Record<string, string> = { accent: '--color-primary-rgb' }
+function hexToRgbTriplet(hex?: string): string | null {
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || '')
+  return m ? `${parseInt(m[1], 16)}, ${parseInt(m[2], 16)}, ${parseInt(m[3], 16)}` : null
+}
+function applyTheme(theme?: Record<string, string>) {
+  if (!theme) return
+  for (const key in THEME_VARS) {
+    if (theme[key]) document.documentElement.style.setProperty(THEME_VARS[key], theme[key])
+  }
+  for (const key in THEME_RGB_VARS) {
+    const rgb = theme[key] && hexToRgbTriplet(theme[key])
+    if (rgb) document.documentElement.style.setProperty(THEME_RGB_VARS[key], rgb)
+  }
+}
+
 function formatTime(ms: number) {
   if (!ms || ms <= 0) return '00:00.000'
   const m = Math.floor(ms / 60000)
@@ -570,10 +597,14 @@ export function App() {
     }
 
     const handler = (e: MessageEvent) => {
-      const { action, data = {} } = e.data ?? {}
+      const { action, data = {}, theme } = e.data ?? {}
       if (!action) return
 
       switch (action) {
+
+        case 'theme':
+          applyTheme(theme)
+          break
 
         case 'countdown':
           setCountdown(data)
