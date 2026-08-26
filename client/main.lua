@@ -204,7 +204,8 @@ local function UpdateLobby(data)
     SendNUIMessage({ action = 'lobby', data = data or {} })
 end
 
--- Rewind timeline — data = { active, secondsBack, fraction (0..1), bufferSeconds }
+-- Rewind timeline — data = { active, secondsBack, fraction (0..1), bufferSeconds,
+--                            creditMs = clock credit so far in this scrub }
 local function UpdateRewind(data)
     SendNUIMessage({ action = 'rewind', data = data or {} })
 end

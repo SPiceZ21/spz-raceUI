@@ -1295,6 +1295,18 @@ body {
   box-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
   transform: translate(-50%, -50%);
 }
+/* Clock being handed back by the scrub — sits under the bar so the eye reads
+   position first, cost second. */
+.rewind-credit {
+  margin-top: 6px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--color-secondary);
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+}
 
 /* ── Post-race results — compact, non-blocking toast ───────── */
 .results-toast {
