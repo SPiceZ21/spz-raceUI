@@ -376,17 +376,22 @@ interface RewindState {
   secondsBack?: number
   fraction?: number       // 0..1 of the buffer scrubbed so far
   bufferSeconds?: number
+  creditMs?: number       // clock handed back so far in this scrub
 }
 
 const RewindTimeline = ({ rw }: { rw: RewindState }) => {
   if (!rw || !rw.active) return null
   const pct = Math.max(0, Math.min(1, rw.fraction ?? 0)) * 100
+  // The clock rewinds with the car; showing what it is giving back is what
+  // makes the scrub read as "undo" rather than "teleport".
+  const credit = (rw.creditMs ?? 0) / 1000
   return (
     <div class="rewind-panel">
       <div class="rewind-track">
         <div class="rewind-track-fill" style={{ width: `${pct}%` }} />
         <div class="rewind-track-head" style={{ left: `${pct}%` }} />
       </div>
+      {credit > 0.05 && <div class="rewind-credit">−{credit.toFixed(1)}s</div>}
     </div>
   )
 }
@@ -487,6 +492,8 @@ export function App() {
   const raceStartRef = useRef<number>(0)
   const lapStartRef = useRef<number>(0)
   const showStatsRef = useRef(false)
+  // Clock credit already folded into the two clocks for the scrub in progress.
+  const rewindCreditRef = useRef<number>(0)
 
   /* Client-side race timer — runs in race mode (not TT).
      Tracks two separate clocks:
@@ -767,14 +774,29 @@ export function App() {
           setWarmup({ remaining: 0, total: 0 })
           break
 
-        case 'rewind':
+        case 'rewind': {
+          // The race clocks are a local interval, so the rewind's clock credit
+          // is applied here as a growing delta: the timer visibly runs backward
+          // while the key is held instead of jumping once on release. Only the
+          // increase since the last frame is applied, so a scrub cannot be
+          // counted twice, and the ref resets when the scrub ends.
+          const credit = data.active ? (data.creditMs ?? 0) : 0
+          const delta = credit - rewindCreditRef.current
+          if (delta > 0) {
+            raceStartRef.current += delta
+            lapStartRef.current += delta
+          }
+          rewindCreditRef.current = credit
+
           setRewind({
             active: !!data.active,
             secondsBack: data.secondsBack ?? 0,
             fraction: data.fraction ?? 0,
             bufferSeconds: data.bufferSeconds ?? 10,
+            creditMs: credit,
           })
           break
+        }
 
         case 'lobby':
           setLobby({
@@ -804,6 +826,7 @@ export function App() {
           setShowStats(false)
           setWarmup({ remaining: 0, total: 0 })
           setRewind({ active: false })
+          rewindCreditRef.current = 0
           break
       }
     }
