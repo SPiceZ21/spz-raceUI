@@ -16,6 +16,7 @@ client_scripts {
 }
 
 exports {
+    'SetKeyHints',
     'ShowCountdown',
     'UpdateRaceOverlay',
     'UpdateCPDistance',

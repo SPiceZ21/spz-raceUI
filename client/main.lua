@@ -192,11 +192,43 @@ local function HideWarmup()
     SendNUIMessage({ action = 'warmupEnd', data = {} })
 end
 
+-- ── Key hints ────────────────────────────────────────────────────────────────
+-- The HUD prints the in-race keys so a driver never has to leave the race to
+-- find out how to recover. Two of the three keys are owned by spz-races
+-- (client/recover.lua) and pushed in through SetKeyHints; the standings toggle
+-- is ours, so it is declared here and merged.
+--
+-- These are the DEFAULT bindings. A player who rebinds in Settings gets the new
+-- key, but the hint still shows the default — FiveM exposes no way to read back
+-- a live command binding.
+local KEY_STANDINGS = "Z"
+
+local KeyHints = { standings = KEY_STANDINGS }
+
+local function PushKeyHints()
+    SendNUIMessage({ action = 'keyhints', data = KeyHints })
+end
+
+local function SetKeyHints(t)
+    if type(t) ~= "table" then return end
+    for k, v in pairs(t) do
+        if type(v) == "string" and v ~= "" then KeyHints[k] = v end
+    end
+    PushKeyHints()
+end
+
+-- The NUI page may not be listening yet when another resource pushes its keys,
+-- so re-send once the frame is definitely up.
+CreateThread(function()
+    Wait(2000)
+    PushKeyHints()
+end)
+
 -- Toggle the standings list (keybind, rebindable in Settings → Key Bindings)
 RegisterCommand("standingstoggle", function()
     SendNUIMessage({ action = 'standingsToggle', data = {} })
 end, false)
-RegisterKeyMapping("standingstoggle", "Race: Toggle Standings List", "keyboard", "Z")
+RegisterKeyMapping("standingstoggle", "Race: Toggle Standings List", "keyboard", KEY_STANDINGS)
 
 -- Lobby pill — data = { mode = 'hidden'|'join'|'queued'|'intermission',
 --                       queueCount, queuePos, seconds }
@@ -215,6 +247,7 @@ local function HideRewind()
 end
 
 -- Exports
+exports('SetKeyHints', SetKeyHints)
 exports('ShowCountdown', ShowCountdown)
 exports('UpdateRaceOverlay', UpdateRaceOverlay)
 exports('UpdateCPDistance', UpdateCPDistance)

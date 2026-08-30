@@ -122,7 +122,9 @@ body {
 .racer-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  /* 8px, not 10: the row gained a rank cluster, so two pixels per gap buys
+     back most of what the crown and movement columns cost the name. */
+  gap: 8px;
   height: 24px;
   padding: 0 10px;
   /* Near-solid across the content, then a short hard falloff at the tail. The
@@ -163,6 +165,57 @@ body {
 }
 .racer-row.is-me .racer-pos { color: var(--color-primary); }
 
+/* ── HUD icons ──────────────────────────────────────────────
+   Icons accompany their text label; they never carry meaning alone. Default
+   is deliberately dim — an icon that competes with its own number has failed.
+   State icons (leader, gained/lost, bot, disconnect) opt back into colour. */
+.hud-ico {
+  flex-shrink: 0;
+  vertical-align: -0.12em;
+  color: rgba(255, 255, 255, 0.38);
+}
+.lap-box .hud-ico,
+.pos-chip .hud-ico,
+.total-row .hud-ico,
+.ref-row .hud-ico,
+.cp-track-text .hud-ico { margin-right: 4px; }
+
+.racer-row.is-me .hud-ico { color: rgba(255, 255, 255, 0.62); }
+
+/* Crown · position · movement arrow are one flex child, with a tight internal
+   gap. Kept together so the row's 10px gap is paid once instead of three
+   times — the name column is the only elastic cell here, so every extra top
+   level child comes straight out of the driver's name. */
+.racer-rank {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+/* One fixed marker slot (crown OR movement arrow), so the icon can appear and
+   disappear without ever shifting the position number beside it. */
+.racer-mark {
+  width: 11px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ico-leader { color: #f0b429; }              /* gold — P1 */
+.ico-up     { color: #34d17a; }              /* place gained */
+.ico-down   { color: #e0554e; }              /* place lost */
+.ico-bot    { color: rgba(255, 255, 255, 0.30); }  /* scores nothing: stays quiet */
+.ico-dc     { color: #e8a33d; }              /* held slot, awaiting reconnect */
+.ico-ahead  { color: #34d17a; margin-right: 3px; }
+.ico-cp-final { color: var(--color-primary); }
+
+/* A held slot is still in the race but is not driving — dim the whole row so
+   the tower reads as "five cars racing", not six. */
+.racer-row.is-dc .racer-name,
+.racer-row.is-dc .racer-gap-box { opacity: 0.55; }
+
 /* nation flag + F1-style race number */
 .racer-flag {
   width: 15px;
@@ -196,11 +249,19 @@ body {
 .racer-name {
   flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 13px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: rgba(255, 255, 255, 0.8);
+}
+/* The ellipsis lives on the text itself now that state icons share the cell —
+   on the flex parent it would clip the icons instead of the name. */
+.racer-name-text {
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -218,7 +279,11 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 3px;
   padding: 2px 6px;
+  /* Gaps are real times now, so this holds "+1:02.88 1L" as well as "+3.41".
+     min-width is a floor, not a cap — the box grows for the long form rather
+     than wrapping mid-number. */
   min-width: 48px;
+  white-space: nowrap;
   text-align: center;
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
@@ -1121,6 +1186,12 @@ body {
 }
 
 /* ── Warmup panel (top-center modular tiles) ───────────────── */
+/* Warm-up panel. Scaled up ~1.2x from its original size: this is read while
+   free-driving an unfamiliar track, from further back than the racing HUD, and
+   at the old size the track name and grid slot were the smallest text on
+   screen. Kept as real px rather than a transform so the type stays crisp.
+   Deliberately short of a full 1.5x: at that size the panel ran into the
+   standings tower on the left and the lap clock on the right. */
 .warmup-panel {
   position: fixed;
   top: 26px;
@@ -1129,18 +1200,18 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   pointer-events: none;
   z-index: 30;
 }
-.wu-grid { display: flex; gap: 6px; }
+.wu-grid { display: flex; gap: 7px; }
 .wu-tile {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
-  min-width: 72px;
-  padding: 6px 12px;
+  gap: 4px;
+  min-width: 88px;
+  padding: 8px 14px;
   background: rgba(6, 7, 9, 0.82);
   border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: 6px;
@@ -1152,7 +1223,7 @@ body {
 }
 .wu-label {
   font-family: var(--font-display);
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -1160,7 +1231,7 @@ body {
 }
 .wu-value {
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: 25px;
   font-weight: 900;
   font-style: italic;
   line-height: 1;
@@ -1168,10 +1239,20 @@ body {
   font-variant-numeric: tabular-nums;
 }
 .wu-value.accent { color: var(--color-primary); }
-.wu-value.sm { font-size: 12px; font-style: normal; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Track names run long ("Dance Dance Revolution", "On The Way To Lockdown"),
+   and at the larger type the old 210px cap ellipsised most of them. Cap in vw
+   as well so a long name can never push the panel into the HUD either side. */
+.wu-value.sm {
+  font-size: 14px;
+  font-style: normal;
+  max-width: min(300px, 26vw);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .wu-bar {
   width: 100%;
-  height: 3px;
+  height: 4px;
   background: rgba(255, 255, 255, 0.07);
   border-radius: 99px;
   overflow: hidden;
@@ -1183,7 +1264,7 @@ body {
   transition: width 950ms linear;
 }
 .wu-hint {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.04em;
   color: rgba(255, 255, 255, 0.5);
@@ -1541,3 +1622,40 @@ body {
 .split-delta.ahead  { border-left-color: #b76cff; }
 .split-delta.behind { border-left-color: var(--color-warning); }
 .split-delta.first  { border-left-color: var(--color-success); }
+
+/* ── Key hints ──────────────────────────────────────────────
+   Docked under the sector strip in the left column. Stays up when the
+   standings list is hidden: the hint for the key that brings the list back
+   cannot live inside the thing it toggles.
+   Quiet by default — this is reference, not telemetry. It should be findable
+   when looked for and invisible when not. */
+.key-hints {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 2px 2px 0;
+}
+
+.key-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.key-hint .keycap {
+  padding: 1px 5px;
+  font-size: 9px;
+  border-bottom-width: 2px;
+  opacity: 0.85;
+}
+
+.key-hint-label {
+  font-family: var(--font-display);
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.38);
+  white-space: nowrap;
+}
