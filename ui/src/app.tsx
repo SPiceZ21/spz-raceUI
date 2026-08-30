@@ -1,4 +1,8 @@
 import { useState, useEffect, useRef } from 'preact/hooks'
+import {
+  Flag, Trophy, MapPin, Timer, Gauge, Crown, Bot, WifiOff,
+  ChevronUp, ChevronDown, Zap,
+} from 'lucide-preact'
 
 import { ProgressionStrip } from './components/ProgressionStrip'
 import './styles/app.css'
@@ -66,6 +70,16 @@ const TimeDigits = ({ text }: { text: string }) => (
   </>
 )
 
+/* ── HUD icons ─────────────────────────────────────────────────
+   Every icon in the HUD goes through here so stroke weight and size stay
+   uniform: a HUD is glanced at, and mixed line weights read as noise.
+   Icons ACCOMPANY their text label, never replace it — a glyph alone costs a
+   new player the meaning, and this is read at 200 km/h.
+   aria-hidden throughout: the text next to it is already the label. */
+const HudIcon = ({ icon: Icon, size = 12, class: cls = '' }: { icon: any, size?: number, class?: string }) => (
+  <Icon size={size} strokeWidth={2.5} class={`hud-ico ${cls}`} aria-hidden="true" />
+)
+
 /* ── KeyCap ────────────────────────────────────────────────── */
 
 const KeyCap = ({ children }: { children: any }) => (
@@ -83,11 +97,14 @@ interface RacerEntry {
   source: number
   name?: string
   position: number | string
-  gap?: string
+  gap?: string        // time behind the LEADER, e.g. "+3.41", "+1:02.88 1L"
+  interval?: string   // time behind the car directly AHEAD
   avatar?: string
   licenseClass?: string
   nation?: string      // ISO 3166-1 alpha-2, lowercase
   raceNumber?: number  // 1-99
+  bot?: boolean        // ghost-bot (replayed line), not a human
+  dc?: boolean         // dropped mid-race, inside the reconnect window
 }
 
 type SectorColour = 'purple' | 'green' | 'yellow'
@@ -118,8 +135,15 @@ const SplitDelta = ({ s }: { s: { delta: number | null; split?: number; cp: numb
     : (d! <= 0 ? '-' : '+') + (Math.abs(d!) / 1000).toFixed(2)
   return (
     <div key={s.key} class={`split-delta ${cls}`}>
-      <span class="split-cp">CP {s.cp}/{s.total}{first ? ' · REF LAP' : ''}</span>
-      <span class="split-val">{text}</span>
+      <span class="split-cp">
+        <HudIcon icon={MapPin} size={10} class="ico-split" />
+        CP {s.cp}/{s.total}{first ? ' · REF LAP' : ''}
+      </span>
+      <span class="split-val">
+        {/* Up on your reference — the one split state worth a glance */}
+        {cls === 'ahead' && <HudIcon icon={Zap} size={11} class="ico-ahead" />}
+        {text}
+      </span>
     </div>
   )
 }
@@ -161,12 +185,63 @@ interface OverlayState {
   isTT?: boolean
 }
 
+/* ── Key hints ──────────────────────────────────────────────
+   The in-race keys, printed so a driver never has to leave the race to find
+   out how to recover. Sits below the sector strip and stays up when the
+   standings list is hidden — the hint for the key that brings the list back
+   cannot live inside the thing it toggles.
+
+   Values arrive from Lua: the recovery keys are owned by spz-races
+   (client/recover.lua) and pushed across, the standings toggle by spz-raceUI.
+   They are DEFAULT bindings; a rebind in Settings is not reflected, because
+   FiveM exposes no way to read a live command binding back. */
+
+interface KeyHints { respawn?: string; flip?: string; standings?: string; rewind?: string; results?: string }
+
+const KeyHintBar = ({ hints, listHidden }: { hints: KeyHints, listHidden: boolean }) => {
+  const items: [string | undefined, string][] = [
+    [hints.standings, listHidden ? 'SHOW LIST' : 'HIDE LIST'],
+    [hints.rewind, 'REWIND'],
+    [hints.respawn, 'LAST CP'],
+    [hints.flip, 'FLIP'],
+    // Pushed by spz-leaderboard, which owns this key. Last in the strip: it is
+    // the only one you press AFTER the race rather than during it.
+    [hints.results, 'RESULTS'],
+  ]
+  const shown = items.filter(([k]) => !!k)
+  if (!shown.length) return null
+
+  return (
+    <div class="key-hints">
+      {shown.map(([k, label]) => (
+        <span key={label} class="key-hint">
+          <KeyCap>{k}</KeyCap>
+          <span class="key-hint-label">{label}</span>
+        </span>
+      ))}
+    </div>
+  )
+}
+
 /* ── Standings ─────────────────────────────────────────────── */
 
 const MAX_STANDINGS = 6
 
 const Standings = ({ positions, mySource }: { positions: RacerEntry[], mySource?: number }) => {
   const all = positions || []
+
+  // Previous order, kept across renders so a place gained or lost can be shown
+  // as a direction rather than a number the driver has to diff themselves.
+  // Ref, not state: this must never itself cause a render.
+  const prevPos = useRef<Record<string, number>>({})
+  const moved: Record<string, number> = {}
+  for (const r of all) {
+    const key = String(r.source)
+    const before = prevPos.current[key]
+    const now = Number(r.position)
+    if (before != null && Number.isFinite(now)) moved[key] = before - now  // >0 = gained
+    prevPos.current[key] = now
+  }
 
   // Show up to 6: top 6, but if I'm outside them swap me into the last slot
   let shown = all.slice(0, MAX_STANDINGS)
@@ -179,14 +254,47 @@ const Standings = ({ positions, mySource }: { positions: RacerEntry[], mySource?
     <div class="standings-list">
       {shown.map(r => {
         const isMe = r.source === mySource
+        const isLeader = Number(r.position) === 1
+        const delta = moved[String(r.source)] || 0
         return (
-          <div key={r.source} class={`racer-row ${isMe ? 'is-me' : ''}`}>
-            <span class="racer-pos">{r.position}</span>
+          <div key={r.source} class={`racer-row ${isMe ? 'is-me' : ''}${r.dc ? ' is-dc' : ''}`}>
+            {/* ONE marker slot beside the position, not two. The name is the
+                only elastic cell in the row, so every fixed column and every
+                row gap comes straight out of it — two slots plus their gaps
+                truncated names that fit before.
+                Priority: a place just changed hands (transient, and the most
+                urgent thing in the tower) outranks the crown, which is already
+                implied by the "1" next to it. */}
+            <span class="racer-rank">
+              <span class="racer-mark">
+                {delta > 0
+                  ? <HudIcon icon={ChevronUp} size={11} class="ico-up" />
+                  : delta < 0
+                    ? <HudIcon icon={ChevronDown} size={11} class="ico-down" />
+                    : isLeader
+                      ? <HudIcon icon={Crown} size={11} class="ico-leader" />
+                      : null}
+              </span>
+              <span class="racer-pos">{r.position}</span>
+            </span>
+
             {r.nation
               ? <img class="racer-flag" src={`flags/${r.nation}.webp`} alt="" />
               : <span class="racer-flag placeholder" />}
             {r.raceNumber != null && <span class="racer-num">{r.raceNumber}</span>}
-            <span class={`racer-name ${isMe ? 'is-me' : ''}`}>{r.name}</span>
+
+            {/* State icons live INSIDE the name cell so they cost a few px of
+                the name's own space instead of another full row gap each. */}
+            <span class={`racer-name ${isMe ? 'is-me' : ''}`}>
+              <span class="racer-name-text">{r.name}</span>
+              {/* Ghost-bots were only tellable apart by name. They do not
+                  score, so the tower should say so. */}
+              {r.bot && <HudIcon icon={Bot} size={11} class="ico-bot" />}
+              {/* Dropped mid-race, slot held for reconnect — explains a car
+                  that stopped improving without vanishing from the tower. */}
+              {r.dc && <HudIcon icon={WifiOff} size={11} class="ico-dc" />}
+            </span>
+
             <span class="racer-gap-box">{r.gap || (isMe ? 'YOU' : '--')}</span>
           </div>
         )
@@ -203,6 +311,7 @@ const Telemetry = ({ data, split }: {
 }) => {
   const totalCPs = data.totalCheckpoints || 0
   const cpPct = totalCPs > 0 ? ((data.checkpoint || 1) / totalCPs) * 100 : 0
+  const isFinalCP = totalCPs > 0 && (data.checkpoint || 1) >= totalCPs
   const displayTime = data.formattedTime || formatTime(data.currentLapTime || 0)
 
   // Total race time only matters for multi-lap races (lap races, not sprints/TT)
@@ -221,11 +330,13 @@ const Telemetry = ({ data, split }: {
       {/* Lap is the single most glanceable fact in a race — it leads. */}
       <div class="tele-head">
         <div class="lap-box">
+          <HudIcon icon={Flag} size={11} class="ico-lap" />
           <span class="lap-label">LAP</span>
           <span class="lap-now">{data.lapNum || 1}</span>
           <span class="lap-of">/{data.totalLaps || 1}</span>
         </div>
         <div class="pos-chip">
+          <HudIcon icon={Trophy} size={11} class="ico-pos" />
           <span class="chip-label">POS</span>
           <span class="chip-val">{posLabel}</span>
         </div>
@@ -234,10 +345,13 @@ const Telemetry = ({ data, split }: {
       <div class="timer-hero"><TimeDigits text={displayTime} /></div>
 
       {/* Checkpoint progress: the bar IS the checkpoint readout, so the count
-          rides on it instead of repeating as loose text underneath. */}
+          rides on it instead of repeating as loose text underneath.
+          The pin becomes a flag on the last checkpoint — the one gate where
+          "which CP is this" actually changes what you do about it. */}
       <div class="cp-track">
         <div class="cp-track-fill" style={{ width: `${cpPct}%` }} />
         <div class="cp-track-text">
+          <HudIcon icon={isFinalCP ? Flag : MapPin} size={11} class={isFinalCP ? 'ico-cp-final' : 'ico-cp'} />
           <span class="cp-word">CP</span>
           <span class="cp-now">{data.checkpoint || 1}</span>
           <span class="cp-of">/{totalCPs || '?'}</span>
@@ -247,13 +361,14 @@ const Telemetry = ({ data, split }: {
       {/* Elapsed race time — a real readout, not a footnote. */}
       {isLapRace && (
         <div class="total-row">
+          <HudIcon icon={Timer} size={11} class="ico-total" />
           <span class="total-label">TOTAL</span>
           <span class="total-val">{displayTotal}</span>
         </div>
       )}
 
       <div class="ref-row">
-        <span class="ref">PB <b>{displayBest}</b></span>
+        <span class="ref"><HudIcon icon={Gauge} size={11} class="ico-pb" />PB <b>{displayBest}</b></span>
       </div>
 
       {split && <SplitDelta s={split} />}
@@ -279,6 +394,7 @@ const CPWaypointBillboard = ({ wp }: { wp: CPWaypoint }) => {
     <div class="cp-wp" style={style}>
       <div class={`cp-wp-inner${close ? ' close' : ''}${urgent ? ' urgent' : ''}`}>
         <div class="cp-chip">
+          <HudIcon icon={MapPin} size={10} class="ico-wp" />
           <span class="cp-chip-val">{wp.dist}</span>
           <span class="cp-chip-unit">m</span>
         </div>
@@ -478,6 +594,7 @@ export function App() {
   const [sectors, setSectors] = useState<(SectorEntry | null)[]>([null, null, null])
   const [split, setSplit] = useState<{ delta: number | null; split?: number; cp: number; total: number; key: number } | null>(null)
   const [showStandings, setShowStandings] = useState(true)
+  const [keyHints, setKeyHints] = useState<KeyHints>({})
 
   // Auto-hide the split delta a few seconds after each crossing
   useEffect(() => {
@@ -582,6 +699,15 @@ export function App() {
         // race (default) — the HUD as it looks mid-lap
         setOverlay(D.overlay)
         setShowOverlay(true)
+        // Key hints normally arrive from Lua on join; seed them so the preview
+        // shows the bar. ?keys=none drops it to judge the HUD without.
+        // ?list=hidden renders the HUD as it looks with the standings list
+        // toggled off, so the key strip can be judged in the state where it
+        // matters most — it is the only thing telling you how to get the list back.
+        if (qs.get('list') === 'hidden') setShowStandings(false)
+        if (qs.get('keys') !== 'none') {
+          setKeyHints({ standings: 'Z', rewind: 'F5', respawn: 'F4', flip: 'X', results: 'F6' })
+        }
         setSectors((D as any).sectors ?? [null, null, null])
         if ((D as any).warmup) setWarmup((D as any).warmup)
         if ((D as any).lobby) setLobby((D as any).lobby)
@@ -807,6 +933,10 @@ export function App() {
           })
           break
 
+        case 'keyhints':
+          setKeyHints(data || {})
+          break
+
         case 'standingsToggle':
           setShowStandings(s => !s)
           break
@@ -856,6 +986,7 @@ export function App() {
           <div class="hud-left">
             {showStandings && <Standings positions={overlay.positions || []} mySource={overlay.mySource} />}
             <SectorStrip sectors={sectors} />
+            <KeyHintBar hints={keyHints} listHidden={!showStandings} />
           </div>
           <Telemetry data={overlay} split={split} />
         </div>
