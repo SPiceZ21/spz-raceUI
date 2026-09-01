@@ -23,13 +23,13 @@ export const MOCK_RACE_DATA = {
     isTT: false,
     totalRaceTime: 158240,
     positions: [
-      // Covers every standings state the tower can render: leader, me, a
-      // ghost-bot, a held slot awaiting reconnect, and a lapped car (long-form
-      // gap) so the gap box is judged at its widest.
+      // Covers every standings state the tower can render: leader, me, a held
+      // slot awaiting reconnect, and a lapped car (long-form gap) so the gap
+      // box is judged at its widest.
       { source: 2, name: "DRIFT_KING",  position: 1, gap: "LEADER",      licenseClass: "S", nation: "jp", raceNumber: 7,  crew_tag: "[APX]" },
       { source: 1, name: "SPICEZ",      position: 2, gap: "+1.25",       licenseClass: "S", nation: "in", raceNumber: 21, crew_tag: "[NR]" },
       { source: 3, name: "SHADOW_GRID", position: 3, gap: "+3.42",       licenseClass: "A", nation: "de", raceNumber: 44, crew_tag: "[NR]" },
-      { source: "bot_1" as any, name: "GHOST PACE", position: 4, gap: "+5.10", bot: true, nation: "fr", raceNumber: 88 },
+      { source: 4, name: "APEX_HUNTER", position: 4, gap: "+5.10", licenseClass: "A", nation: "fr", raceNumber: 88 },
       { source: 5, name: "NIGHT_OWL",   position: 5, gap: "+8.77",       licenseClass: "B", nation: "gb", raceNumber: 18, dc: true },
       { source: 6, name: "REDLINE",     position: 6, gap: "+1:02.88 1L", licenseClass: "C", nation: "us", raceNumber: 96 }
     ]
@@ -39,7 +39,12 @@ export const MOCK_RACE_DATA = {
     { time: 28094, colour: "yellow", delta:  0.084 },
     null
   ],
-  cpWaypoint: { dist: 184, onScreen: true, x: 0.62, y: 0.44 },
+  cpWaypoint: {
+    dist: 184,
+    guide: { onScreen: true, x: 0.62, y: 0.44, turn: 'SLIGHT RIGHT', severity: 'slight', angle: 28, speed: 45 },
+    // Off by default, matching the server default. ?pill=1 turns it on.
+    pill: undefined,
+  },
   // Warm-up panel. Long track name on purpose — it is the string that decides
   // how wide the tile has to be.
   warmup: { remaining: 47, total: 90, track: "DOWNTOWN GRAND PRIX", class: "A", gridPos: 4 },

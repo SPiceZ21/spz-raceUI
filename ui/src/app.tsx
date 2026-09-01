@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'preact/hooks'
 import {
-  Flag, Trophy, MapPin, Timer, Gauge, Crown, Bot, WifiOff,
-  ChevronUp, ChevronDown, Zap,
+  Flag, Trophy, MapPin, Timer, Gauge, Crown, WifiOff,
+  ChevronUp, ChevronDown, Zap, ArrowUp,
 } from 'lucide-preact'
 
 import { ProgressionStrip } from './components/ProgressionStrip'
@@ -103,7 +103,6 @@ interface RacerEntry {
   licenseClass?: string
   nation?: string      // ISO 3166-1 alpha-2, lowercase
   raceNumber?: number  // 1-99
-  bot?: boolean        // ghost-bot (replayed line), not a human
   dc?: boolean         // dropped mid-race, inside the reconnect window
 }
 
@@ -287,9 +286,6 @@ const Standings = ({ positions, mySource }: { positions: RacerEntry[], mySource?
                 the name's own space instead of another full row gap each. */}
             <span class={`racer-name ${isMe ? 'is-me' : ''}`}>
               <span class="racer-name-text">{r.name}</span>
-              {/* Ghost-bots were only tellable apart by name. They do not
-                  score, so the tower should say so. */}
-              {r.bot && <HudIcon icon={Bot} size={11} class="ico-bot" />}
               {/* Dropped mid-race, slot held for reconnect — explains a car
                   that stopped improving without vanishing from the tower. */}
               {r.dc && <HudIcon icon={WifiOff} size={11} class="ico-dc" />}
@@ -342,6 +338,17 @@ const Telemetry = ({ data, split }: {
         </div>
       </div>
 
+      {/*
+        Hero clock — the CURRENT LAP time.
+
+        The lap is what you are driving right now and the number you push
+        against corner by corner, so it leads. The elapsed total sits under it
+        as the supporting readout: it decides the result, but it is not the
+        number you are reacting to at 200 km/h.
+
+        Sprints and time trials have no meaningful total separate from this
+        clock, so the second row does not render for them at all.
+      */}
       <div class="timer-hero"><TimeDigits text={displayTime} /></div>
 
       {/* Checkpoint progress: the bar IS the checkpoint readout, so the count
@@ -358,10 +365,10 @@ const Telemetry = ({ data, split }: {
         </div>
       </div>
 
-      {/* Elapsed race time — a real readout, not a footnote. */}
+      {/* Elapsed race time — the supporting clock under the lap. */}
       {isLapRace && (
         <div class="total-row">
-          <HudIcon icon={Timer} size={11} class="ico-total" />
+          <HudIcon icon={Timer} size={12} class="ico-total" />
           <span class="total-label">TOTAL</span>
           <span class="total-val">{displayTotal}</span>
         </div>
@@ -378,28 +385,149 @@ const Telemetry = ({ data, split }: {
 
 /* ── CP Distance Pill ──────────────────────────────────────── */
 
-interface CPWaypoint { dist: number; onScreen: boolean; x: number; y: number }
+/*
+ * Two in-world readouts, toggled independently by the server (see Config.Hud in
+ * spz-races). They answer different questions and are anchored to different
+ * things, which is why they are separate elements rather than one panel:
+ *
+ *   guide  anchored to your CAR — what the road does at the next gate
+ *   pill   anchored to the CHECKPOINT — where that gate is, with a stem to it
+ *
+ * A missing sub-object means "the server has this one turned off", so absence
+ * is the off switch and there is no separate visibility flag to keep in sync.
+ */
+interface TurnGuideData {
+  onScreen: boolean
+  x: number
+  y: number
+  turn?: string        // "SLIGHT RIGHT", "HARD LEFT", "STRAIGHT", "U-TURN"
+  severity?: string    // straight | slight | normal | hard | uturn
+  angle?: number       // signed degrees, negative = left
+  speed?: number       // mph
+}
 
-// The "Next CP" pill projected into 3D space — anchored on the checkpoint via
-// screen coords (x/y are 0..1), with a stem line pointing down to the CP point.
-const CPWaypointBillboard = ({ wp }: { wp: CPWaypoint }) => {
-  if (!wp || !wp.onScreen || !wp.dist || wp.dist <= 0) return null
-  const close = wp.dist < 80
-  const urgent = wp.dist < 30
+interface PillData {
+  onScreen: boolean
+  x: number
+  y: number
+}
+
+interface CPWaypoint {
+  dist: number
+  guide?: TurnGuideData
+  pill?: PillData
+}
+
+/*
+ * Next-CP distance pill — anchored on the checkpoint, with a stem line pointing
+ * down to the gate point.
+ *
+ * Kept alongside the turn guide rather than replaced by it: the guide tells you
+ * what the road does, this tells you where the gate actually is, which still
+ * matters on an unfamiliar track or when a gate sits behind geometry. Off by
+ * default because its distance duplicates the guide's; servers that run without
+ * the guide will want it on.
+ */
+const CPDistancePill = ({ pill, dist }: { pill?: PillData; dist: number }) => {
+  if (!pill || !pill.onScreen || !dist || dist <= 0) return null
+  const close = dist < 80
+  const urgent = dist < 30
   // GPU-composited transform (no left/top layout thrash) = rock-steady tracking
   const style = {
-    transform: `translate3d(${(wp.x * 100).toFixed(3)}vw, ${(wp.y * 100).toFixed(3)}vh, 0)`,
+    transform: `translate3d(${(pill.x * 100).toFixed(3)}vw, ${(pill.y * 100).toFixed(3)}vh, 0)`,
   }
   return (
     <div class="cp-wp" style={style}>
       <div class={`cp-wp-inner${close ? ' close' : ''}${urgent ? ' urgent' : ''}`}>
         <div class="cp-chip">
           <HudIcon icon={MapPin} size={10} class="ico-wp" />
-          <span class="cp-chip-val">{wp.dist}</span>
+          <span class="cp-chip-val">{dist}</span>
           <span class="cp-chip-unit">m</span>
         </div>
         <div class="cp-wp-stem" />
         <div class="cp-wp-dot" />
+      </div>
+    </div>
+  )
+}
+
+/*
+ * Turn guide — the corner call, anchored in world space ahead of the car.
+ *
+ * Replaces the old "next CP" distance pill, which was pinned to the checkpoint
+ * and told you only how far away it was. Distance alone is the least useful
+ * thing a driver can be told at speed: the gate already has props and blips
+ * saying where it is. What is missing is what the road DOES when you get there,
+ * so this leads with the turn and carries the distance as support.
+ *
+ * The cluster MIRRORS around the arrow: turning right puts the arrow on the
+ * right and the speed on the left, turning left flips both. The arrow always
+ * ends up on the side you are about to travel towards, so the layout itself
+ * points the way before you have read a word of it.
+ */
+/*
+ * Turn label and severity from a signed angle. Mirrors _turnLabel in
+ * spz-races/client/nui_bridge.lua — the live HUD is fed the label from Lua, so
+ * this exists only so the browser preview can render a real variant from
+ * ?angle=. Keep the bands in step with the Lua side if either changes.
+ */
+function turnFromAngle(angle: number): { turn: string; severity: string } {
+  const a = Math.abs(angle)
+  const side = angle < 0 ? 'LEFT' : 'RIGHT'
+  if (a < 12) return { turn: 'STRAIGHT', severity: 'straight' }
+  if (a < 40) return { turn: `SLIGHT ${side}`, severity: 'slight' }
+  if (a < 100) return { turn: side, severity: 'normal' }
+  if (a < 150) return { turn: `HARD ${side}`, severity: 'hard' }
+  return { turn: 'U-TURN', severity: 'uturn' }
+}
+
+const TurnGuide = ({ guide, dist }: { guide?: TurnGuideData; dist: number }) => {
+  if (!guide || !guide.onScreen || !dist || dist <= 0) return null
+
+  const angle = guide.angle ?? 0
+  const left = angle < 0
+  const sev = guide.severity || 'straight'
+  const urgent = dist < 40
+
+  // GPU-composited transform (no left/top layout thrash) = rock-steady tracking
+  const style = {
+    transform: `translate3d(${(guide.x * 100).toFixed(3)}vw, ${(guide.y * 100).toFixed(3)}vh, 0)`,
+  }
+
+  /*
+   * The arrow is a single up-arrow rotated by the REAL angle rather than one of
+   * a handful of fixed diagonal glyphs, so a 20° kink and a 90° corner do not
+   * draw the same picture. Clamped to ±135°: past that the arrow points back at
+   * the driver and stops reading as a direction, and a U-turn is better said in
+   * words anyway.
+   */
+  const rot = Math.max(-135, Math.min(135, angle))
+
+  const speedCell = guide.speed != null && (
+    <div class="tg-speed">
+      <HudIcon icon={Zap} size={11} class="ico-tg-speed" />
+      <span class="tg-speed-unit">MPH</span>
+      <span class="tg-speed-val">{guide.speed}</span>
+    </div>
+  )
+
+  const arrowCell = (
+    <div class="tg-arrow" style={{ transform: `rotate(${rot}deg)` }}>
+      <ArrowUp size={44} strokeWidth={2.5} aria-hidden="true" />
+    </div>
+  )
+
+  return (
+    <div class="tg" style={style}>
+      <div class={`tg-inner sev-${sev}${urgent ? ' urgent' : ''}${left ? ' is-left' : ''}`}>
+        {left ? arrowCell : speedCell}
+
+        <div class="tg-main">
+          <div class="tg-label">{guide.turn || 'STRAIGHT'}</div>
+          <div class="tg-dist">{dist}<span>M</span></div>
+        </div>
+
+        {left ? speedCell : arrowCell}
       </div>
     </div>
   )
@@ -587,7 +715,7 @@ export function App() {
   const [postRace, setPostRace] = useState<any>(null)
   const [autoClose, setAutoClose] = useState(12)
   const [cpDist, setCpDist] = useState(0)
-  const [cpWp, setCpWp] = useState<CPWaypoint>({ dist: 0, onScreen: false, x: 0.5, y: 0.5 })
+  const [cpWp, setCpWp] = useState<CPWaypoint>({ dist: 0 })
   const [warmup, setWarmup] = useState<WarmupState>({ remaining: 0, total: 0 })
   const [lobby, setLobby] = useState<LobbyState>({ mode: 'hidden' })
   const [rewind, setRewind] = useState<RewindState>({ active: false })
@@ -706,7 +834,10 @@ export function App() {
         // matters most — it is the only thing telling you how to get the list back.
         if (qs.get('list') === 'hidden') setShowStandings(false)
         if (qs.get('keys') !== 'none') {
-          setKeyHints({ standings: 'Z', rewind: 'F5', respawn: 'F4', flip: 'X', results: 'F6' })
+          // Must match the defaults in Docs/keybinds.md — this is browser-preview
+          // seed data only, but a stale copy here is how a screenshot ends up
+          // teaching the wrong key.
+          setKeyHints({ standings: 'N', rewind: 'B', respawn: 'F4', flip: 'K', results: 'F6' })
         }
         setSectors((D as any).sectors ?? [null, null, null])
         if ((D as any).warmup) setWarmup((D as any).warmup)
@@ -715,13 +846,32 @@ export function App() {
         // while judging it: ?cp=none hides it, ?dist=&x=&y= reposition it.
         const cpMode = qs.get('cp')
         if (cpMode !== 'none') {
-          const base = (D as any).cpWaypoint
+          const base = (D as any).cpWaypoint as CPWaypoint | undefined
           if (base) {
-            setCpWp({
-              ...base,
-              dist: Number(qs.get('dist') ?? base.dist ?? 184),
+            // ?angle= drives the whole turn guide: the label and severity are
+            // derived from it exactly as Lua derives them, so a left/right or
+            // slight/hard variant can be judged without a running server.
+            // ?guide=0 / ?pill=0|1 mirror the server toggles by dropping or
+            // adding the matching sub-object, exactly as Lua does.
+            const angleQ = qs.get('angle')
+            const derived = angleQ != null ? turnFromAngle(Number(angleQ)) : null
+
+            const guide = qs.get('guide') === '0' ? undefined : {
+              ...(base.guide as TurnGuideData),
               ...(qs.get('x') ? { x: Number(qs.get('x')) } : {}),
               ...(qs.get('y') ? { y: Number(qs.get('y')) } : {}),
+              ...(qs.get('speed') ? { speed: Number(qs.get('speed')) } : {}),
+              ...(derived ? { angle: Number(angleQ), ...derived } : {}),
+            }
+
+            const pill = qs.get('pill') === '1'
+              ? (base.pill ?? { onScreen: true, x: 0.62, y: 0.34 })
+              : undefined
+
+            setCpWp({
+              dist: Number(qs.get('dist') ?? base.dist ?? 184),
+              guide,
+              pill,
             })
           }
         }
@@ -878,11 +1028,12 @@ export function App() {
           break
 
         case 'cpWaypoint':
+          // A missing sub-object means the server has that readout switched off,
+          // so absence is the off switch — nothing extra to keep in sync.
           setCpWp({
             dist: data.dist ?? 0,
-            onScreen: !!data.onScreen,
-            x: data.x ?? 0.5,
-            y: data.y ?? 0.5,
+            guide: data.guide,
+            pill: data.pill,
           })
           break
 
@@ -992,8 +1143,13 @@ export function App() {
         </div>
       )}
 
+      {/* Two in-world readouts, each rendered only when the server sends its
+          half of the payload — see Config.Hud in spz-races. */}
       {showOverlay && !overlay.isTT && (
-        <CPWaypointBillboard wp={cpWp} />
+        <>
+          <TurnGuide guide={cpWp.guide} dist={cpWp.dist} />
+          <CPDistancePill pill={cpWp.pill} dist={cpWp.dist} />
+        </>
       )}
 
       <WarmupPanel wu={warmup} />

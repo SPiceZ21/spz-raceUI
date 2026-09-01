@@ -103,20 +103,26 @@ body {
   position: absolute;
   top: 32px;
   left: 32px;
-  /* Wide enough for a full driver name — at 210px anything past ~6 characters
-     ellipsised, so most of the field read as "DRIFT…" / "REDLI…". */
-  width: 272px;
+  /* Wide enough for a full driver name. This has been raised twice for the same
+     reason: at 210px anything past ~6 characters ellipsised, and again when the
+     name went to 15px, which put "DRIFT_KING" and "SHADOW_GRID" back under the
+     ellipsis. Making the type bigger without making the column wider just moves
+     the truncation, it does not fix the legibility it was meant to buy. */
+  width: 294px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  transform: scale(1.1);            /* +10% HUD */
+  /* No blanket scale() any more. The column used to be drawn at 1.1x to buy
+     legibility, but scaling a 300px column to 330px pushed its right edge into
+     the centre warm-up banner. Every size in here is now set in real units, so
+     the column occupies exactly the width it claims. */
   transform-origin: top left;
 }
 
 .standings-list {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
 }
 
 .racer-row {
@@ -124,8 +130,8 @@ body {
   align-items: center;
   /* 8px, not 10: the row gained a rank cluster, so two pixels per gap buys
      back most of what the crown and movement columns cost the name. */
-  gap: 8px;
-  height: 24px;
+  gap: 6px;
+  height: 30px;
   padding: 0 10px;
   /* Near-solid across the content, then a short hard falloff at the tail. The
      earlier version started fading at the halfway point, which left the name
@@ -155,10 +161,10 @@ body {
 
 .racer-pos {
   font-family: var(--font-display);
-  font-size: 12px;
+  font-size: 15.5px;
   font-weight: 800;
   font-style: italic;
-  width: 16px;
+  width: 20px;
   text-align: center;
   color: rgba(255, 255, 255, 0.45);
   flex-shrink: 0;
@@ -168,7 +174,7 @@ body {
 /* ── HUD icons ──────────────────────────────────────────────
    Icons accompany their text label; they never carry meaning alone. Default
    is deliberately dim — an icon that competes with its own number has failed.
-   State icons (leader, gained/lost, bot, disconnect) opt back into colour. */
+   State icons (leader, gained/lost, disconnect) opt back into colour. */
 .hud-ico {
   flex-shrink: 0;
   vertical-align: -0.12em;
@@ -206,7 +212,6 @@ body {
 .ico-leader { color: #f0b429; }              /* gold — P1 */
 .ico-up     { color: #34d17a; }              /* place gained */
 .ico-down   { color: #e0554e; }              /* place lost */
-.ico-bot    { color: rgba(255, 255, 255, 0.30); }  /* scores nothing: stays quiet */
 .ico-dc     { color: #e8a33d; }              /* held slot, awaiting reconnect */
 .ico-ahead  { color: #34d17a; margin-right: 3px; }
 .ico-cp-final { color: var(--color-primary); }
@@ -218,8 +223,8 @@ body {
 
 /* nation flag + F1-style race number */
 .racer-flag {
-  width: 15px;
-  height: 10px;
+  width: 18px;
+  height: 12px;
   object-fit: cover;
   border-radius: 2px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
@@ -231,15 +236,15 @@ body {
 }
 .racer-num {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11.5px;
   font-weight: 800;
   font-style: italic;
   color: rgba(255, 255, 255, 0.75);
   background: rgba(255, 255, 255, 0.07);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 3px;
-  padding: 0 4px;
-  min-width: 18px;
+  padding: 0 3px;
+  min-width: 17px;
   text-align: center;
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
@@ -251,8 +256,8 @@ body {
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 13px;
+  gap: 5px;
+  font-size: 15.5px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -271,7 +276,7 @@ body {
 /* time difference — small boxed chip on the right */
 .racer-gap-box {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.02em;
   color: rgba(255, 255, 255, 0.55);
@@ -282,7 +287,7 @@ body {
   /* Gaps are real times now, so this holds "+1:02.88 1L" as well as "+3.41".
      min-width is a floor, not a cap — the box grows for the long form rather
      than wrapping mid-number. */
-  min-width: 48px;
+  min-width: 44px;
   white-space: nowrap;
   text-align: center;
   flex-shrink: 0;
@@ -378,7 +383,7 @@ body {
 
 .timer-hero {
   font-family: var(--font-display);
-  font-size: 33px;
+  font-size: 40px;
   font-weight: 900;
   color: #fff;
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.65);
@@ -466,16 +471,16 @@ body {
   line-height: 1;
 }
 .total-row .total-label {
-  font-size: 8px;
+  font-size: 9.5px;
   font-weight: 800;
   letter-spacing: 0.16em;
   color: rgba(255, 255, 255, 0.38);
 }
 .total-row .total-val {
   font-family: var(--font-display);
-  font-size: 14px;
+  font-size: 20px;
   font-weight: 800;
-  color: rgba(255, 255, 255, 0.82);
+  color: rgba(255, 255, 255, 0.9);
   font-variant-numeric: tabular-nums;
 }
 
@@ -515,7 +520,7 @@ body {
 
 .sector-cell {
   flex: 1;
-  height: 28px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -536,7 +541,7 @@ body {
 
 .sector-label {
   font-family: var(--font-main);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 400;
   letter-spacing: 0.1em;
   color: rgba(255, 255, 255, 0.5);
@@ -545,7 +550,7 @@ body {
 
 .sector-time {
   font-family: var(--font-main);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 300;
   font-variant-numeric: tabular-nums;
   color: rgba(255, 255, 255, 0.9);
@@ -1109,15 +1114,19 @@ body {
   transition: width 1s linear;
 }
 
-/* ── Next-CP 3D waypoint (screen-projected billboard) ──────── */
-/* Positioned purely via a GPU transform — no left/top layout thrash, so it
-   tracks the checkpoint without jitter. */
+/* ── Next-CP distance pill (screen-projected, anchored to the gate) ── */
+/*
+ * The other half of the in-world pair: this one is pinned to the CHECKPOINT and
+ * draws a stem down to the gate point, so it answers "where is the gate" rather
+ * than "what does the road do". Off by default (Config.Hud.CpDistancePill),
+ * because its distance duplicates the turn guide's when both are running.
+ */
 .cp-wp {
   position: fixed;
   left: 0;
   top: 0;
   pointer-events: none;
-  z-index: 40;
+  z-index: 39;              /* under the turn guide if they ever cross */
   will-change: transform;
 }
 
@@ -1183,6 +1192,124 @@ body {
   border-radius: 50%;
   background: var(--color-primary);
   box-shadow: 0 0 6px rgba(var(--color-primary-rgb), 0.6);
+}
+
+/* ── Turn guide (screen-projected, anchored to the car) ─────── */
+/*
+ * Positioned purely via a GPU transform — no left/top layout thrash, so it
+ * tracks the car without jitter at any framerate.
+ */
+.tg {
+  position: fixed;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  z-index: 40;
+  will-change: transform;
+}
+
+/* Second layer does the anchoring so the projected transform stays untouched. */
+.tg-inner {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  transform: translate(-50%, -50%);
+  opacity: 0.92;
+  transition: opacity 200ms ease;
+  /* No panel, no border, no plate. This sits over the road at speed, and a
+     boxed chip would occlude the exact piece of tarmac the driver is aiming
+     at. Type carries its own shadow instead so it reads on any surface. */
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.95), 0 0 22px rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+}
+
+.tg-inner.urgent { opacity: 1; }
+
+/* ── Centre column: the call and the distance ─────────────── */
+
+.tg-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.tg-label {
+  font-family: var(--font-main);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.tg-dist {
+  font-family: var(--font-display);
+  font-size: 38px;
+  font-weight: 900;
+  line-height: 0.95;
+  color: #fff;
+  font-variant-numeric: tabular-nums;   /* no width wobble as digits change */
+}
+
+.tg-dist span {
+  font-size: 24px;
+  font-weight: 800;
+  margin-left: 1px;
+}
+
+/* Under 40 m the call stops being advice and becomes an instruction. */
+.tg-inner.urgent .tg-dist,
+.tg-inner.urgent .tg-label { color: var(--color-primary); }
+
+/* ── Arrow ────────────────────────────────────────────────── */
+/*
+ * Rotated by the real turn angle, so a kink and a hairpin do not draw the same
+ * picture. transform-origin stays centred or the arrow orbits its own tail.
+ */
+.tg-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.9));
+  transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: 50% 50%;
+}
+
+.tg-inner.urgent .tg-arrow { color: var(--color-primary); }
+
+/* A straight is not a turn: the arrow shrinks out of the way rather than
+   pointing dead ahead as loudly as a hairpin. */
+.tg-inner.sev-straight .tg-arrow { opacity: 0.55; }
+.tg-inner.sev-hard  .tg-arrow,
+.tg-inner.sev-uturn .tg-arrow { color: var(--color-primary); }
+
+/* ── Speed ────────────────────────────────────────────────── */
+
+.tg-speed {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.ico-tg-speed { color: var(--color-success); align-self: center; }
+
+.tg-speed-unit {
+  font-family: var(--font-main);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.tg-speed-val {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--color-success);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ── Warmup panel (top-center modular tiles) ───────────────── */

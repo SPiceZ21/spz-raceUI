@@ -28,8 +28,7 @@ one is now", so the value holds across a lap boundary — a lapped car reads as 
 is genuinely down, suffixed `1L`. The payload carries both `gap` (to the leader) and
 `interval` (to the car directly ahead); the tower renders `gap` today.
 
-Two flags ride on each entry: `bot` (ghost-bot — replayed line, scores nothing) and `dc`
-(dropped mid-race, slot held for reconnect).
+One flag rides on each entry: `dc` (dropped mid-race, slot held for reconnect).
 
 ## Icons
 
@@ -45,7 +44,6 @@ the meaning, and the HUD has no room for a legend.
 | Checkpoint | `MapPin`, `Flag` on the last gate | CP counter, distance pill, split tower |
 | Standings | `Crown` (gold) | Race leader |
 | Standings | `ChevronUp` / `ChevronDown` | Place gained or lost since the last update |
-| Standings | `Bot` (dim) | Ghost-bot — deliberately quiet, it scores nothing |
 | Standings | `WifiOff` (amber) | Held slot awaiting reconnect; the row dims |
 | Split | `Zap` | Up on your reference lap |
 
