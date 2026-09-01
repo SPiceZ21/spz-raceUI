@@ -201,7 +201,10 @@ end
 -- These are the DEFAULT bindings. A player who rebinds in Settings gets the new
 -- key, but the hint still shows the default — FiveM exposes no way to read back
 -- a live command binding.
-local KEY_STANDINGS = "Z"
+-- NOT Z: ox_lib's radial menu is bound to Z, and the radial is the in-car
+-- surface for the raceline/ghost controls — pressing it opened both.
+-- Registry: Docs/keybinds.md
+local KEY_STANDINGS = "N"
 
 local KeyHints = { standings = KEY_STANDINGS }
 
