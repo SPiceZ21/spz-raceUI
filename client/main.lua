@@ -269,6 +269,12 @@ exports('TT_UpdateHUD', TT_UpdateHUD)
 exports('TT_Hide', TT_Hide)
 exports('TT_Broadcast', TT_Broadcast)
 
+-- Fastest lap banner — data = { name, ms, mine }
+local function ShowFastestLap(data)
+    SendNUIMessage({ action = 'fastestLap', data = data or {} })
+end
+exports('ShowFastestLap', ShowFastestLap)
+
 -- Split delta tower — data = { cp, total, split, delta }
 local function ShowSplitDelta(data)
     SendNUIMessage({ action = 'splitDelta', data = data or {} })

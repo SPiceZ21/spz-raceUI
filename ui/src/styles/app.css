@@ -63,20 +63,27 @@ body {
   position: fixed;
   inset: 0;
   display: flex;
-  align-items: center;
+  /* Bottom-anchored, not centred. The start camera frames the flag girl in the
+     middle of the shot, and a centred countdown put a two-hundred-pixel number
+     directly over the one thing the shot exists to show. The lower third keeps
+     the count large and readable while leaving the road clear. */
+  align-items: flex-end;
   justify-content: center;
+  padding-bottom: 7vh;
   pointer-events: none;
   z-index: 90;
 }
 
 /* Darkened edges pull the eye to the middle without dimming the road itself —
-   the driver still has to see the grid through this. */
+   the driver still has to see the grid through this. Its clear centre is pulled
+   up to match where the camera now frames the girl, and widened, so the shot is
+   not looking through a dark ring. */
 .cd-vignette {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(58% 58% at 50% 52%, transparent 38%, rgba(0, 0, 0, 0.62) 100%),
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.45), transparent 26%, transparent 72%, rgba(0, 0, 0, 0.55));
+    radial-gradient(66% 66% at 50% 44%, transparent 46%, rgba(0, 0, 0, 0.58) 100%),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.4), transparent 24%, transparent 62%, rgba(0, 0, 0, 0.62));
 }
 
 /* Speed lines. Static geometry, animated opacity — cheap, and it reads as
@@ -1944,6 +1951,75 @@ body {
 .split-delta.ahead  { border-left-color: #b76cff; }
 .split-delta.behind { border-left-color: var(--color-warning); }
 .split-delta.first  { border-left-color: var(--color-success); }
+
+/* ── Fastest lap banner ─────────────────────────────────────
+   Top centre, clear of the HUD columns and of the countdown. Purple is the
+   fastest-lap colour everywhere else in this HUD (see .split-delta.ahead), so
+   it is the same purple here rather than a second "good news" colour. */
+.fastest-lap {
+  /* Fixed, not absolute: .nui-root has no height of its own, so a percentage
+     top resolved against it collapsed to 0 and pinned the banner to the very
+     top of the screen — underneath the warmup bar. Viewport-relative is what
+     was meant, and 21% clears the track/warmup strip above it. */
+  position: fixed;
+  top: 21%;
+  z-index: 40;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 16px;
+  border-radius: 6px;
+  background: rgba(6, 7, 9, 0.88);
+  border: 1px solid rgba(183, 108, 255, 0.35);
+  border-left: 3px solid #b76cff;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+  pointer-events: none;
+  animation: fl-in 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+             fl-out 0.5s ease 4.5s forwards;
+}
+/* Your own lap earns the filled treatment — the difference between "someone
+   went quicker" and "you did" should be readable without reading. */
+.fastest-lap.mine {
+  background: linear-gradient(90deg, rgba(183, 108, 255, 0.22), rgba(6, 7, 9, 0.88) 60%);
+  border-color: rgba(183, 108, 255, 0.6);
+}
+@keyframes fl-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(-8px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+@keyframes fl-out { to { opacity: 0; } }
+
+.fl-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  letter-spacing: 0.16em;
+  color: #b76cff;
+}
+.fl-name {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #fff;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fl-time {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: #b76cff;
+}
+.ico-fl { color: #b76cff; }
 
 /* ── Key hints ──────────────────────────────────────────────
    Docked under the sector strip in the left column. Stays up when the
