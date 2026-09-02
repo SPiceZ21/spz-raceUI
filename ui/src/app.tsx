@@ -703,6 +703,87 @@ const PostRace = ({ data, autoClose }: { data: any, autoClose: number, onDismiss
   )
 }
 
+/* ── Countdown ─────────────────────────────────────────────────
+   The race start. Everything on screen is either the count itself or context
+   the driver wants in the last seconds before the lights: which track, which
+   class, how many laps, and where they are on the grid.
+
+   The staging lights are the spine of it — a drag strip tree, read top to
+   bottom, one lamp per remaining second and the whole column green on GO. It
+   is the one countdown motif a street racer already knows how to read at a
+   glance, which is the point: nobody should have to parse a number to know
+   whether to be on the throttle.
+
+   One lamp per second of the count, so the tree matches however long the
+   server's countdown actually is rather than assuming three — a five second
+   count against a three lamp tree spent its first two seconds looking broken.
+
+   `number` counts DOWN, so the lit-lamp test is inverted: on the first tick
+   only the top lamp is lit, on the last they all are. */
+function Countdown({ data }: { data: any }) {
+  const isGo = !!data.isGo
+  const n = Number(data.number) || 0
+  // Falls back to the number itself, so a payload without totalSeconds still
+  // draws a full tree on its first tick instead of an empty one.
+  const total = Math.max(1, Math.min(8, Number(data.totalSeconds) || n || 3))
+  const lamps = Array.from({ length: total }, (_, i) => total - i)
+
+  return (
+    <div class={`cd ${isGo ? 'is-go' : ''}`}>
+      <div class="cd-vignette" />
+      <div class="cd-streaks" aria-hidden="true">
+        <i /><i /><i /><i /><i /><i />
+      </div>
+
+      <div class="cd-stage">
+        {/* Context strip — track, class, laps. Hidden on GO: at that point
+            there is exactly one thing worth reading. */}
+        {!isGo && (data.track || data.class || data.laps) && (
+          <div class="cd-meta">
+            {data.track && <span class="cd-track">{data.track}</span>}
+            {data.class && <span class="cd-chip cd-class">CLASS {data.class}</span>}
+            {data.laps && <span class="cd-chip">{data.laps} LAP{Number(data.laps) === 1 ? '' : 'S'}</span>}
+          </div>
+        )}
+
+        <div class="cd-main">
+          {!isGo && (
+            <div class="cd-tree" aria-hidden="true">
+              {lamps.map(l => (
+                <i key={l} class={`cd-lamp ${n <= l ? 'lit' : ''}`} />
+              ))}
+            </div>
+          )}
+
+          <div class="cd-numwrap">
+            {/* Ghost sits behind the numeral and scales past it, so each tick
+                reads as a hit rather than a swap. Keyed on the value so it
+                re-runs its animation every second. */}
+            {!isGo && <div key={`g${n}`} class="cd-ghost">{n}</div>}
+            <div key={isGo ? 'go' : n} class="cd-num">{isGo ? 'GO' : n}</div>
+          </div>
+
+          {!isGo && <div class="cd-tree cd-tree-r" aria-hidden="true">
+            {lamps.map(l => (
+              <i key={l} class={`cd-lamp ${n <= l ? 'lit' : ''}`} />
+            ))}
+          </div>}
+        </div>
+
+        {/* Grid slot. The one number that is about THIS driver rather than the
+            race, so it gets its own line under the count. */}
+        {!isGo && data.gridPos ? (
+          <div class="cd-grid">
+            <span class="cd-grid-l">GRID</span>
+            <span class="cd-grid-v">P{data.gridPos}</span>
+            {data.total ? <span class="cd-grid-of">/ {data.total}</span> : null}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
 /* ── Main App ──────────────────────────────────────────────── */
 
 export function App() {
@@ -1122,13 +1203,7 @@ export function App() {
 
   return (
     <div class="nui-root" style="background: transparent !important; pointer-events: none;">
-      {showCountdown && (
-        <div class="countdown-container">
-          <div class={`countdown-box ${countdown.isGo ? 'is-go' : ''}`}>
-            {countdown.isGo ? 'GO!' : countdown.number}
-          </div>
-        </div>
-      )}
+      {showCountdown && <Countdown data={countdown} />}
 
       {showOverlay && (
         <div class="hud-layer">

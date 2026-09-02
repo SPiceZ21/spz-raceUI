@@ -54,35 +54,230 @@ body {
   padding-bottom: 40px;
 }
 
-/* ── Countdown ────────────────────────────────────────────── */
+/* ── Countdown ────────────────────────────────────────────────
+   Race start. Full-screen, pointer-transparent, and built to be read in
+   peripheral vision: the staging tree carries the count, the numeral confirms
+   it, and everything else is context that disappears on GO. */
 
-.countdown-container {
+.cd {
   position: fixed;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   pointer-events: none;
+  z-index: 90;
 }
 
-.countdown-box {
+/* Darkened edges pull the eye to the middle without dimming the road itself —
+   the driver still has to see the grid through this. */
+.cd-vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(58% 58% at 50% 52%, transparent 38%, rgba(0, 0, 0, 0.62) 100%),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.45), transparent 26%, transparent 72%, rgba(0, 0, 0, 0.55));
+}
+
+/* Speed lines. Static geometry, animated opacity — cheap, and it reads as
+   engine shake rather than motion, which is right for a stationary grid. */
+.cd-streaks {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  opacity: 0.5;
+}
+.cd-streaks i {
+  position: absolute;
+  left: -10%;
+  width: 120%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(var(--color-primary-rgb), 0.55), transparent);
+  transform: skewY(-1.6deg);
+  animation: cd-streak 2.4s ease-in-out infinite;
+}
+.cd-streaks i:nth-child(1) { top: 22%; animation-delay: 0s;    }
+.cd-streaks i:nth-child(2) { top: 33%; animation-delay: .28s;  }
+.cd-streaks i:nth-child(3) { top: 44%; animation-delay: .55s;  }
+.cd-streaks i:nth-child(4) { top: 61%; animation-delay: .18s;  }
+.cd-streaks i:nth-child(5) { top: 72%; animation-delay: .74s;  }
+.cd-streaks i:nth-child(6) { top: 83%; animation-delay: .42s;  }
+@keyframes cd-streak {
+  0%, 100% { opacity: 0.12; transform: skewY(-1.6deg) scaleX(0.86); }
+  50%      { opacity: 0.85; transform: skewY(-1.6deg) scaleX(1);    }
+}
+
+.cd-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+/* Context strip */
+.cd-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: cd-rise 420ms cubic-bezier(.16, 1, .3, 1) both;
+}
+.cd-track {
   font-family: var(--font-display);
-  font-size: 180px;
-  font-weight: 900;
-  line-height: 1;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
   color: #fff;
-  text-shadow: 0 0 60px rgba(var(--color-primary-rgb), 0.5);
-  animation: cd-pop 250ms cubic-bezier(.16,1,.3,1);
+  text-shadow: 0 2px 18px rgba(0, 0, 0, .9);
 }
-
-.countdown-box.is-go {
+.cd-chip {
+  padding: 5px 11px;
+  border: 1px solid rgba(255, 255, 255, .16);
+  border-radius: 4px;
+  background: rgba(8, 8, 12, .68);
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .16em;
+  color: rgba(255, 255, 255, .72);
+}
+.cd-chip.cd-class {
+  border-color: rgba(var(--color-primary-rgb), .55);
+  background: rgba(var(--color-primary-rgb), .14);
   color: var(--color-primary);
-  text-shadow: 0 0 80px rgba(var(--color-primary-rgb), 0.8);
 }
 
-@keyframes cd-pop {
-  from { transform: scale(1.4); opacity: 0; }
-  to   { transform: scale(1);   opacity: 1; }
+.cd-main {
+  display: flex;
+  align-items: center;
+  gap: 42px;
+}
+
+/* Staging tree — drag strip lamps, one per second, read top down. */
+.cd-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px 12px;
+  border: 1px solid rgba(255, 255, 255, .1);
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(10, 10, 14, .82), rgba(6, 6, 9, .68));
+}
+.cd-lamp {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .07);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12);
+  transition: background 140ms linear, box-shadow 140ms linear;
+}
+.cd-lamp.lit {
+  background: var(--color-primary);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, .3),
+    0 0 22px rgba(var(--color-primary-rgb), .95),
+    0 0 46px rgba(var(--color-primary-rgb), .5);
+}
+
+/* Numeral */
+.cd-numwrap {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 260px;
+  min-height: 220px;
+}
+.cd-num {
+  font-family: var(--font-display);
+  font-size: 200px;
+  font-weight: 900;
+  line-height: .82;
+  color: #fff;
+  letter-spacing: -.02em;
+  text-shadow:
+    0 0 70px rgba(var(--color-primary-rgb), .55),
+    0 6px 30px rgba(0, 0, 0, .85);
+  animation: cd-hit 320ms cubic-bezier(.16, 1, .3, 1) both;
+}
+/* Expanding echo of the numeral. Sells each tick as an impact. */
+.cd-ghost {
+  position: absolute;
+  font-family: var(--font-display);
+  font-size: 200px;
+  font-weight: 900;
+  line-height: .82;
+  color: transparent;
+  -webkit-text-stroke: 2px rgba(var(--color-primary-rgb), .85);
+  animation: cd-echo 900ms cubic-bezier(.16, 1, .3, 1) both;
+  pointer-events: none;
+}
+
+/* Grid slot */
+.cd-grid {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  padding: 7px 16px;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 5px;
+  background: rgba(8, 8, 12, .72);
+  animation: cd-rise 420ms cubic-bezier(.16, 1, .3, 1) both;
+}
+.cd-grid-l {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .22em;
+  color: rgba(255, 255, 255, .45);
+}
+.cd-grid-v {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+.cd-grid-of {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, .4);
+}
+
+/* GO — the whole frame commits. */
+.cd.is-go .cd-vignette { background: radial-gradient(60% 60% at 50% 50%, rgba(var(--color-primary-rgb), .2), transparent 70%); }
+.cd.is-go .cd-streaks  { opacity: 1; }
+.cd.is-go .cd-streaks i { animation: cd-streak-go 420ms ease-out both; }
+.cd.is-go .cd-num {
+  font-size: 240px;
+  letter-spacing: .04em;
+  color: var(--color-primary);
+  text-shadow:
+    0 0 90px rgba(var(--color-primary-rgb), .95),
+    0 0 180px rgba(var(--color-primary-rgb), .6);
+  animation: cd-go 520ms cubic-bezier(.16, 1, .3, 1) both;
+}
+
+@keyframes cd-hit {
+  from { transform: scale(1.45); opacity: 0; filter: blur(6px); }
+  to   { transform: scale(1);    opacity: 1; filter: blur(0);   }
+}
+@keyframes cd-echo {
+  from { transform: scale(1);   opacity: .85; }
+  to   { transform: scale(1.9); opacity: 0;   }
+}
+@keyframes cd-go {
+  0%   { transform: scale(.55) skewX(-14deg); opacity: 0; }
+  55%  { transform: scale(1.12) skewX(0deg);  opacity: 1; }
+  100% { transform: scale(1)    skewX(0deg);  opacity: 1; }
+}
+@keyframes cd-streak-go {
+  from { opacity: 1; transform: skewY(-1.6deg) scaleX(0.2); }
+  to   { opacity: 0; transform: skewY(-1.6deg) scaleX(1.4); }
+}
+@keyframes cd-rise {
+  from { transform: translateY(10px); opacity: 0; }
+  to   { transform: none;             opacity: 1; }
 }
 
 /* ── HUD layer ────────────────────────────────────────────── */
