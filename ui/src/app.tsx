@@ -147,6 +147,27 @@ const SplitDelta = ({ s }: { s: { delta: number | null; split?: number; cp: numb
   )
 }
 
+/* Fastest lap banner — the session's best lap, whoever set it. `mine` marks
+   your own, which is the whole point of showing someone else's: you can see
+   what you are chasing and whether you have just taken it. Auto-fades; keyed so
+   a second one re-triggers rather than sitting there. */
+const FastestLap = ({ f }: { f: { name: string; ms: number; mine: boolean; key: number } }) => {
+  const m = Math.floor(f.ms / 60000)
+  const s = Math.floor((f.ms % 60000) / 1000)
+  const t = Math.floor(f.ms % 1000)
+  const time = `${m}:${s.toString().padStart(2, '0')}.${t.toString().padStart(3, '0')}`
+  return (
+    <div key={f.key} class={`fastest-lap ${f.mine ? 'mine' : ''}`}>
+      <span class="fl-tag">
+        <HudIcon icon={Zap} size={11} class="ico-fl" />
+        FASTEST LAP
+      </span>
+      <span class="fl-name">{f.mine ? 'YOU' : f.name}</span>
+      <span class="fl-time">{time}</span>
+    </div>
+  )
+}
+
 const SectorStrip = ({ sectors }: { sectors: (SectorEntry | null)[] }) => (
   <div class="sector-strip">
     {[0, 1, 2].map((i) => {
@@ -804,6 +825,7 @@ export function App() {
   const [split, setSplit] = useState<{ delta: number | null; split?: number; cp: number; total: number; key: number } | null>(null)
   const [showStandings, setShowStandings] = useState(true)
   const [keyHints, setKeyHints] = useState<KeyHints>({})
+  const [fastest, setFastest] = useState<{ name: string; ms: number; mine: boolean; key: number } | null>(null)
 
   // Auto-hide the split delta a few seconds after each crossing
   useEffect(() => {
@@ -811,6 +833,14 @@ export function App() {
     const t = setTimeout(() => setSplit(null), 3200)
     return () => clearTimeout(t)
   }, [split?.key])
+
+  // Same for the fastest-lap banner — held a little longer, since it is read
+  // rather than glanced at, but never left on screen mid-corner.
+  useEffect(() => {
+    if (!fastest) return
+    const t = setTimeout(() => setFastest(null), 5000)
+    return () => clearTimeout(t)
+  }, [fastest?.key])
 
   const autoCloseRef = useRef<any>(null)
   const raceTimerRef = useRef<any>(null)
@@ -921,6 +951,11 @@ export function App() {
           setKeyHints({ standings: 'N', rewind: 'B', respawn: 'F4', flip: 'K', results: 'F6' })
         }
         setSectors((D as any).sectors ?? [null, null, null])
+        // ?fl=1 shows someone else taking the fastest lap, ?fl=mine your own.
+        const fl = qs.get('fl')
+        if (fl) {
+          setFastest({ name: 'ItzSteve', ms: 84512, mine: fl === 'mine', key: Date.now() })
+        }
         if ((D as any).warmup) setWarmup((D as any).warmup)
         if ((D as any).lobby) setLobby((D as any).lobby)
         // Checkpoint pill overrides so it can be placed clear of the HUD corners
@@ -1104,6 +1139,15 @@ export function App() {
           })
           break
 
+        case 'fastestLap':
+          setFastest({
+            name: data.name ?? 'Driver',
+            ms: data.ms ?? 0,
+            mine: !!data.mine,
+            key: Date.now(),
+          })
+          break
+
         case 'cpDistUpdate':
           setCpDist(data.dist ?? 0)
           break
@@ -1226,6 +1270,10 @@ export function App() {
           <CPDistancePill pill={cpWp.pill} dist={cpWp.dist} />
         </>
       )}
+
+      {/* Outside the overlay layer: a fastest lap is worth seeing even with
+          the running order hidden. */}
+      {fastest && <FastestLap f={fastest} />}
 
       <WarmupPanel wu={warmup} />
       <LobbyPill lb={lobby} />
