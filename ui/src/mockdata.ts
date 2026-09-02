@@ -1,6 +1,7 @@
 export const MOCK_RACE_DATA = {
   countdown: {
-    number: 3,
+    number: 4,
+    totalSeconds: 5,
     isGo: false,
     track: "DOWNTOWN GRAND PRIX",
     class: "A",
