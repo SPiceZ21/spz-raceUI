@@ -1622,11 +1622,11 @@ body {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
   pointer-events: none;
   z-index: 30;
-  /* Trimmed against the rest of the HUD: two 5% passes, so 0.95 x 0.95.
+  /* Trimmed against the rest of the HUD, one pass at a time: 0.95 x 0.95 x 0.98.
      Scaled here rather than by shaving a pixel off each value below, which
      would round unevenly and pull the keycap, label and timer out of
      proportion with each other. */
-  zoom: 0.9025;
+  zoom: 0.88445;
 }
 .lobby-pill.join { border-color: rgba(var(--color-primary-rgb), 0.35); }
 .lp-key {
