@@ -3,7 +3,7 @@ game 'gta5'
 
 description 'SPiceZ Race UI (Countdown & Overlay)'
 author 'SPiceZ'
-version '1.2.1'
+version '1.4.1'
 
 ui_page 'ui/dist/index.html'
 
@@ -24,6 +24,7 @@ exports {
     'ShowWarmup',
     'HideWarmup',
     'UpdateLobby',
+    'UpdateWanted',
     'SetRaceOverlayVisible',
     'HideAll',
     'ShowPostRaceStats'

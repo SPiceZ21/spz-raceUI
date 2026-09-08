@@ -1,4 +1,9 @@
 :root {
+  /* Overall HUD scale. Anything positioned from WORLD coordinates has to divide
+     this back out — see .cp-wp — because viewport units resolve against the real
+     viewport and are then multiplied by zoom, which moves a projected element
+     off the thing it is supposed to be pinned to. */
+  --hud-scale:       1.1;
   --color-primary:   #ff6600;
   --color-primary-rgb: 255, 102, 0;
   --color-secondary: #7000ff;
@@ -29,7 +34,7 @@ body {
   overflow: hidden;
   pointer-events: none;
   /* Global race UI scale — every HUD element renders 10% larger. */
-  zoom: 1.1;
+  zoom: var(--hud-scale);
 }
 
 
@@ -391,6 +396,20 @@ body {
 .cp-track-text .hud-ico { margin-right: 4px; }
 
 .racer-row.is-me .hud-ico { color: rgba(255, 255, 255, 0.62); }
+
+/* The timing column reads as one instrument, so its icons are one colour: the
+   accent. Lap, position, checkpoint, total and PB are all the same KIND of
+   thing — a label on a number — and giving each a different tone made the
+   column look like five unrelated widgets stacked up.
+   State icons elsewhere keep their own colours on purpose: gold for the
+   leader, green and red for places gained and lost, amber for a held slot,
+   purple for a fastest lap. Those encode meaning, and flattening them to the
+   accent would throw that meaning away. */
+.telemetry-hud .hud-ico { color: var(--color-primary); }
+
+/* The split chip is part of the same timing readout, just docked on the other
+   side of the screen. */
+.ico-split { color: var(--color-primary); }
 
 /* Crown · position · movement arrow are one flex child, with a tight internal
    gap. Kept together so the row's 10px gap is paid once instead of three
@@ -1331,6 +1350,12 @@ body {
   pointer-events: none;
   z-index: 39;
   will-change: transform;
+  /* Cancel the root scale. The x/y below are World3dToScreen2d output in vw/vh,
+     and viewport units are NOT scaled by zoom — they resolve against the real
+     viewport and are then drawn 1.1x larger, which walked the pill away from
+     its checkpoint, by more the further it sat from the screen centre. Dividing
+     the scale back out here puts it back on the gate. */
+  zoom: calc(1 / var(--hud-scale));
 }
 
 /* Second layer does the anchoring so the projected transform stays untouched */
@@ -1350,17 +1375,17 @@ body {
   display: flex;
   align-items: baseline;
   justify-content: center;
-  gap: 3px;
-  min-width: 82px;
-  padding: 5px 12px;
-  border-radius: 6px;
+  gap: 4px;
+  min-width: 104px;
+  padding: 7px 16px;
+  border-radius: 7px;
   background: rgba(6, 7, 9, 0.55);
   border: 1px solid rgba(255, 255, 255, 0.10);
   transition: border-color 200ms ease, background 200ms ease;
 }
 .cp-chip-val {
   font-family: var(--font-display);
-  font-size: 28px;
+  font-size: 36px;
   font-weight: 900;
   font-style: italic;
   line-height: 1;
@@ -1369,7 +1394,7 @@ body {
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
 }
 .cp-chip-unit {
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.06em;
   color: rgba(255, 255, 255, 0.5);
@@ -1385,16 +1410,114 @@ body {
 /* thin stem down to the checkpoint point */
 .cp-wp-stem {
   width: 1px;
-  height: 54px;
+  height: 96px;
   background: linear-gradient(to bottom, rgba(var(--color-primary-rgb), 0.7), rgba(var(--color-primary-rgb), 0));
 }
 .cp-wp-dot {
-  width: 5px;
-  height: 5px;
-  margin-top: -3px;
+  width: 7px;
+  height: 7px;
+  margin-top: -4px;
   border-radius: 50%;
   background: var(--color-primary);
   box-shadow: 0 0 6px rgba(var(--color-primary-rgb), 0.6);
+}
+
+/* ── Wanted stars (top-centre, cop chase) ──────────────────── */
+/*
+ * Replaces the vanilla star HUD, which spz-core hides every frame along with
+ * the rest of components 1-22.
+ *
+ * Top-centre rather than the base game's top-right: the right column of this
+ * HUD is the telemetry block (lap, position, clock), and a five-star row parked
+ * under it would either collide with it or land in the speedometer's corner.
+ * During a race the centre strip is free — the warm-up panel and the results
+ * toast that share it only exist either side of LIVE.
+ */
+.wanted {
+  position: fixed;
+  top: 26px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+  z-index: 31;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.75));
+}
+
+.wanted-stars {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Unlit slots are drawn, not omitted: five faint stars say how much worse this
+   can get, which is the half that makes the lit count mean something. */
+.wanted-star {
+  display: inline-flex;
+  color: rgba(255, 255, 255, 0.16);
+  transition: color 180ms ease, transform 180ms ease;
+}
+.wanted-star.lit {
+  color: var(--color-primary);
+}
+
+/* Outlined, so the row survives the background it is drawn over. An orange star
+   on a bright sky or a white wall loses its silhouette entirely; a dark stroke
+   behind the fill keeps the shape readable against anything.
+   paint-order puts the stroke UNDER the fill — without it the stroke is drawn
+   on top and eats half the star's colour. */
+.wanted-star svg {
+  fill: currentColor;
+  stroke: rgba(0, 0, 0, 0.9);
+  stroke-width: 2.25;
+  paint-order: stroke fill;
+  stroke-linejoin: round;
+}
+
+/* Unlit slots read as empty outlines rather than faint solid stars: an outline
+   is unmistakably "not earned yet", where a dim fill just looks like a star in
+   shadow. */
+.wanted-star:not(.lit) svg {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.32);
+  stroke-width: 2;
+}
+
+/* The star just earned gets one beat of emphasis. It is the only animation
+   here, so it reads as "that went up" rather than as decoration. */
+.wanted-star.lit.newest {
+  animation: wanted-pop 420ms ease-out;
+}
+@keyframes wanted-pop {
+  0%   { transform: scale(1.6); color: #fff; }
+  100% { transform: scale(1);   color: var(--color-primary); }
+}
+
+/* Slim. The stars carry the weight of this element; the label underneath is
+   there to name it, and setting it heavy made two loud things competing. */
+.wanted-note {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+}
+.wanted-note.dim { color: rgba(255, 255, 255, 0.45); }
+/* The escape countdown is the exception: it is a number being read under
+   pressure, so it keeps the weight the label gives up. */
+.wanted-note b { font-weight: 800; }
+
+/* Losing them: the whole element goes green and pulses. This is the one state
+   the driver is actively trying to reach, so it is worth being loud about. */
+.wanted.losing .wanted-star.lit { color: var(--color-success); }
+.wanted.losing .wanted-note     { color: var(--color-success); }
+.wanted.losing                  { animation: wanted-escape 900ms ease-in-out infinite; }
+@keyframes wanted-escape {
+  50% { opacity: 0.55; }
 }
 
 /* ── Warmup panel (top-center modular tiles) ───────────────── */
@@ -1499,10 +1622,11 @@ body {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
   pointer-events: none;
   z-index: 30;
-  /* Trimmed 5% against the rest of the HUD. Scaled here rather than by shaving
-     a pixel off each value below, which would round unevenly and pull the
-     keycap, label and timer out of proportion with each other. */
-  zoom: 0.95;
+  /* Trimmed against the rest of the HUD: two 5% passes, so 0.95 x 0.95.
+     Scaled here rather than by shaving a pixel off each value below, which
+     would round unevenly and pull the keycap, label and timer out of
+     proportion with each other. */
+  zoom: 0.9025;
 }
 .lobby-pill.join { border-color: rgba(var(--color-primary-rgb), 0.35); }
 .lp-key {
@@ -1671,8 +1795,8 @@ body {
 
 .rt-head { display: flex; flex-direction: column; gap: 1px; }
 .rt-eyebrow {
-  font-size: 8px;
-  font-weight: 800;
+  font-size: 11px;
+  font-weight: 500;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--color-primary);
@@ -1698,25 +1822,30 @@ body {
 }
 
 .rt-metric { display: flex; flex-direction: column; gap: 2px; }
+/* Regular. At 8px/700 every label on this panel was shouting at a size too
+   small to read — the labels name the numbers, they are not the numbers. */
 .rt-label {
-  font-size: 8px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 500;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.4);
 }
+/* The times. Bold, and the only bold thing on the panel — finish and best lap
+   are what a driver actually came to this screen to read. */
 .rt-val {
   font-family: var(--font-display);
-  font-size: 15px;
-  font-weight: 800;
+  font-size: 16px;
+  font-weight: 900;
   color: #fff;
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
+/* Regular against the times: the ratings matter, but not more than the lap. */
 .rt-delta {
   font-family: var(--font-display);
   font-size: 15px;
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }

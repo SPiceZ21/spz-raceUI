@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'preact/hooks'
 import {
   Flag, Trophy, MapPin, Timer, Gauge, Crown, WifiOff,
-  ChevronUp, ChevronDown, Zap,
+  ChevronUp, ChevronDown, Zap, Star,
 } from 'lucide-preact'
 
 import { ProgressionStrip } from './components/ProgressionStrip'
@@ -450,6 +450,56 @@ const CPDistancePill = ({ pill, dist }: { pill?: PillData; dist: number }) => {
   )
 }
 
+/* ── Wanted stars (top-centre, cop chase) ─────────────────── */
+
+/*
+ * The wanted readout. spz-core hides HUD components 1-22 every frame, the
+ * vanilla star display among them, so this is the only one on screen — it is a
+ * replacement for it, not a decoration beside it.
+ *
+ * Always FIVE slots, lit up to the current level. A row that grows as you earn
+ * stars tells you what you have; a fixed row of five tells you what you have
+ * AND how much worse it can get, which is the half that makes the number mean
+ * something at a glance.
+ */
+
+interface WantedState {
+  stars: number
+  max: number
+  escape?: number      // seconds left on the "losing them" countdown
+}
+
+const WANTED_SLOTS = 5
+
+const WantedStars = ({ w }: { w: WantedState }) => {
+  if (!w || w.stars <= 0) return null
+
+  const slots = Math.max(WANTED_SLOTS, w.max || WANTED_SLOTS)
+  const losing = (w.escape ?? 0) > 0
+
+  return (
+    <div class={`wanted${losing ? ' losing' : ''}`}>
+      <div class="wanted-stars">
+        {Array.from({ length: slots }, (_, i) => (
+          <span
+            key={i}
+            class={`wanted-star${i < w.stars ? ' lit' : ''}${i === w.stars - 1 ? ' newest' : ''}`}
+          >
+            <Star size={22} aria-hidden="true" />
+          </span>
+        ))}
+      </div>
+
+      {/* The escape clock replaces the label rather than sitting beside it:
+          while it is counting, it is the only thing on this element worth
+          reading. */}
+      {losing
+        ? <div class="wanted-note">LOSING THEM <b>{Math.ceil(w.escape as number)}s</b></div>
+        : <div class="wanted-note dim">WANTED</div>}
+    </div>
+  )
+}
+
 /* ── Warmup panel (modular tiles, top-center) ──────────────── */
 
 interface WarmupState {
@@ -716,6 +766,7 @@ export function App() {
   const [cpWp, setCpWp] = useState<CPWaypoint>({ dist: 0 })
   const [warmup, setWarmup] = useState<WarmupState>({ remaining: 0, total: 0 })
   const [lobby, setLobby] = useState<LobbyState>({ mode: 'hidden' })
+  const [wanted, setWanted] = useState<WantedState>({ stars: 0, max: 5 })
   const [rewind, setRewind] = useState<RewindState>({ active: false })
   const [sectors, setSectors] = useState<(SectorEntry | null)[]>([null, null, null])
   const [split, setSplit] = useState<{ delta: number | null; split?: number; cp: number; total: number; key: number } | null>(null)
@@ -854,6 +905,16 @@ export function App() {
         }
         if ((D as any).warmup) setWarmup((D as any).warmup)
         if ((D as any).lobby) setLobby((D as any).lobby)
+        // ?wanted=0..5 with optional ?escape=seconds, so the star row and the
+        // losing-them state can be judged without a pursuit running.
+        const wantedQ = qs.get('wanted')
+        if (wantedQ != null) {
+          setWanted({
+            stars: Number(wantedQ),
+            max: 5,
+            escape: qs.get('escape') ? Number(qs.get('escape')) : undefined,
+          })
+        }
         // Checkpoint pill overrides so it can be placed clear of the HUD corners
         // while judging it: ?cp=none hides it, ?dist=&x=&y= reposition it.
         const cpMode = qs.get('cp')
@@ -1084,6 +1145,14 @@ export function App() {
           break
         }
 
+        case 'wanted':
+          setWanted({
+            stars: data.stars ?? 0,
+            max: data.max ?? 5,
+            escape: data.escape,
+          })
+          break
+
         case 'lobby':
           setLobby({
             mode: data.mode ?? 'hidden',
@@ -1151,6 +1220,10 @@ export function App() {
       {showOverlay && !overlay.isTT && (
         <CPDistancePill pill={cpWp.pill} dist={cpWp.dist} />
       )}
+
+      {/* Outside the overlay gate: a pursuit is worth seeing with the running
+          order hidden, and it ends on its own when the stars do. */}
+      <WantedStars w={wanted} />
 
       {/* Outside the overlay layer: a fastest lap is worth seeing even with
           the running order hidden. */}

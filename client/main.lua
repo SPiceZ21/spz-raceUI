@@ -239,6 +239,14 @@ local function UpdateLobby(data)
     SendNUIMessage({ action = 'lobby', data = data or {} })
 end
 
+-- Wanted level — data = { stars = 0..max, max, escape = seconds left on the
+--                         "losing them" countdown, or nil }
+-- stars = 0 hides it. spz-core hides the vanilla star HUD every frame, so this
+-- is the only star readout on screen.
+local function UpdateWanted(data)
+    SendNUIMessage({ action = 'wanted', data = data or {} })
+end
+
 -- Rewind timeline — data = { active, secondsBack, fraction (0..1), bufferSeconds,
 --                            creditMs = clock credit so far in this scrub }
 local function UpdateRewind(data)
@@ -260,6 +268,7 @@ exports('ResetSectors', ResetSectors)
 exports('ShowWarmup', ShowWarmup)
 exports('HideWarmup', HideWarmup)
 exports('UpdateLobby', UpdateLobby)
+exports('UpdateWanted', UpdateWanted)
 exports('UpdateRewind', UpdateRewind)
 exports('HideRewind', HideRewind)
 exports('SetRaceOverlayVisible', SetRaceOverlayVisible)
