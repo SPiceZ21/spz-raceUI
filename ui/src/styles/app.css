@@ -28,6 +28,8 @@ body {
   background: transparent;
   overflow: hidden;
   pointer-events: none;
+  /* Global race UI scale — every HUD element renders 10% larger. */
+  zoom: 1.1;
 }
 
 
@@ -1608,12 +1610,12 @@ body {
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
+  gap: 12px;
+  padding: 12px 24px;
   background: rgba(6, 7, 9, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 6px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  border-radius: 9px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
   pointer-events: none;
   z-index: 30;
 }
@@ -1622,20 +1624,20 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 5px;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 8px;
   background: var(--color-primary);
   color: #000;
-  border-radius: 4px;
+  border-radius: 6px;
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: 17px;
   font-weight: 900;
 }
-.lp-key.sm { min-width: 14px; height: 14px; font-size: 9px; border-radius: 3px; }
+.lp-key.sm { min-width: 21px; height: 21px; font-size: 13px; border-radius: 4px; }
 .lp-text {
   font-family: var(--font-display);
-  font-size: 12px;
+  font-size: 18px;
   font-weight: 800;
   letter-spacing: 0.1em;
   color: #fff;
@@ -1643,14 +1645,14 @@ body {
 .lp-sub {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 10px;
+  gap: 6px;
+  font-size: 14px;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.45);
 }
 .lp-timer {
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: 26px;
   font-weight: 900;
   font-style: italic;
   color: var(--color-primary);
@@ -1658,11 +1660,11 @@ body {
   line-height: 1;
 }
 .lp-dot {
-  width: 7px;
-  height: 7px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: #22c55e;
-  box-shadow: 0 0 7px #22c55eaa;
+  box-shadow: 0 0 10px #22c55eaa;
   animation: lp-dot-pulse 1.4s ease-in-out infinite;
 }
 @keyframes lp-dot-pulse {
