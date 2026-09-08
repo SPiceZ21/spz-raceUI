@@ -42,9 +42,8 @@ export const MOCK_RACE_DATA = {
   ],
   cpWaypoint: {
     dist: 184,
-    guide: { onScreen: true, x: 0.62, y: 0.44, turn: 'SLIGHT RIGHT', severity: 'slight', angle: 28, speed: 45 },
-    // Off by default, matching the server default. ?pill=1 turns it on.
-    pill: undefined,
+    // On by default, matching the server default. ?pill=0 turns it off.
+    pill: { onScreen: true, x: 0.62, y: 0.44 },
   },
   // Warm-up panel. Long track name on purpose — it is the string that decides
   // how wide the tile has to be.
