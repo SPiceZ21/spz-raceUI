@@ -587,17 +587,31 @@ const CPDistancePill = ({ pill, dist }: { pill?: PillData; dist: number }) => {
   const el = useRef<HTMLDivElement>(null)
   const target = useRef({ x: 0, y: 0 })
   const cur = useRef<{ x: number; y: number } | null>(null)
+  const vis = useRef(false)
   const raf = useRef(0)
 
   target.current = { x: pill?.x ?? 0, y: pill?.y ?? 0 }
-
-  // Dropping off screen and coming back must not be animated: the gate is
-  // somewhere else entirely by then, and easing to it drags the pill across the
-  // screen. Adopt the new point outright.
-  if (!visible) cur.current = null
+  vis.current = visible
 
   useEffect(() => {
     const step = () => {
+      raf.current = requestAnimationFrame(step)
+
+      /*
+       * Hidden means DON'T EASE — and the loop has to know that, not just the
+       * renderer.
+       *
+       * While the pill is hidden the payload carries no point, so the target is
+       * (0,0). Easing toward that parks the smoothed position in the top-left
+       * corner, and the next time a gate appeared the pill flew in from there
+       * across the whole screen before settling. Clearing it means the first
+       * visible frame ADOPTS the real point instead of travelling to it.
+       */
+      if (!vis.current) {
+        cur.current = null
+        return
+      }
+
       const t = target.current
 
       if (!cur.current) {
@@ -612,8 +626,6 @@ const CPDistancePill = ({ pill, dist }: { pill?: PillData; dist: number }) => {
         node.style.transform =
           `translate3d(${(cur.current.x * 100).toFixed(3)}vw, ${(cur.current.y * 100).toFixed(3)}vh, 0)`
       }
-
-      raf.current = requestAnimationFrame(step)
     }
 
     raf.current = requestAnimationFrame(step)
@@ -944,7 +956,7 @@ function Countdown({ data }: { data: any }) {
 /* ── Main App ──────────────────────────────────────────────── */
 
 /* Bumped with fxmanifest.lua. See the uiReady effect below for why it exists. */
-const UI_BUILD = '1.5.2'
+const UI_BUILD = '1.6.1'
 
 export function App() {
   const [showCountdown, setShowCountdown] = useState(false)

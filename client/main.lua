@@ -79,8 +79,9 @@ local function UpdateRaceOverlay(data)
             -- except the cars near you. This is the same downgrade the name
             -- handling above goes out of its way to avoid.
             racer.licenseClass = p['spz:licenseClass'] or racer.licenseClass or "D"
-            racer.nation       = p['spz:nation'] or racer.nation
-            racer.raceNumber   = p['spz:raceNumber'] or racer.raceNumber
+            -- Both spellings, then the server's value. See positions.lua.
+            racer.nation     = p['spz:nation'] or p['nation'] or racer.nation
+            racer.raceNumber = p['spz:raceNumber'] or p['raceNumber'] or racer.raceNumber
             
             if racer.source == (data.mySource or GetPlayerServerId(PlayerId())) then
                 hudCache.myPosition = racer.position
