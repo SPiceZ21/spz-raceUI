@@ -61,10 +61,26 @@ local function UpdateRaceOverlay(data)
                 if racer.name == "**INVALID**" then racer.name = "Racer" end
             end
             racer.name = stateName or racer.name
-            racer.avatar = p['spz:avatar'] or "https://raw.githubusercontent.com/SPiceZ21/spz-core-media-kit/main/Extra/nametag_profile.png"
-            racer.licenseClass = p['spz:licenseClass'] or "D"
-            racer.nation = p['spz:nation']
-            racer.raceNumber = p['spz:raceNumber']
+            racer.avatar = p['spz:avatar'] or racer.avatar
+                or "https://raw.githubusercontent.com/SPiceZ21/spz-core-media-kit/main/Extra/nametag_profile.png"
+
+            -- Statebag FIRST, then whatever the server already sent — never the
+            -- other way round, and never an unconditional assignment.
+            --
+            -- These were being overwritten with the local statebag whatever it
+            -- held, and a player statebag is only replicated to clients that
+            -- have that player in SCOPE. Mid-race the field is spread across the
+            -- map, so most racers are out of scope on most clients and every one
+            -- of those reads nil — which wiped the nation and race number the
+            -- server had already put in the payload (positions.lua reads the
+            -- same statebags server-side, where they are always available).
+            --
+            -- The result was a tower with no flags and no numbers for anybody
+            -- except the cars near you. This is the same downgrade the name
+            -- handling above goes out of its way to avoid.
+            racer.licenseClass = p['spz:licenseClass'] or racer.licenseClass or "D"
+            racer.nation       = p['spz:nation'] or racer.nation
+            racer.raceNumber   = p['spz:raceNumber'] or racer.raceNumber
             
             if racer.source == (data.mySource or GetPlayerServerId(PlayerId())) then
                 hudCache.myPosition = racer.position
@@ -256,6 +272,15 @@ end
 local function HideRewind()
     SendNUIMessage({ action = 'rewind', data = { active = false } })
 end
+
+-- The page announcing itself on load. If this prints a build that is not the
+-- one in fxmanifest.lua, the client is serving a CACHED copy of the UI and no
+-- amount of restarting the resource will change what is on screen — the cache
+-- has to be cleared, or the player has to rejoin.
+RegisterNUICallback('uiReady', function(data, cb)
+    print(("^2[spz-raceUI] UI build %s loaded^7"):format(tostring(data and data.build)))
+    cb('ok')
+end)
 
 -- Exports
 exports('SetKeyHints', SetKeyHints)

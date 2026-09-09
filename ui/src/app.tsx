@@ -98,7 +98,10 @@ interface RacerEntry {
   name?: string
   position: number | string
   gap?: string        // time behind the LEADER, e.g. "+3.41", "+1:02.88 1L"
+  gapMs?: number      // ...the same thing as a NUMBER, when it is measured
+  gapLaps?: number    // whole laps down, when lapped
   interval?: string   // time behind the car directly AHEAD
+  intervalMs?: number
   avatar?: string
   licenseClass?: string
   nation?: string      // ISO 3166-1 alpha-2, lowercase
@@ -247,21 +250,148 @@ const KeyHintBar = ({ hints, listHidden }: { hints: KeyHints, listHidden: boolea
 
 const MAX_STANDINGS = 6
 
+/* Mirrors _fmtGap in spz-races/server/positions.lua. The tower formats the
+   number itself now, because it is animating between values and a string it was
+   handed cannot be interpolated. Keep the two in step if either changes. */
+function fmtGap(ms: number): string {
+  if (ms >= 60000) {
+    const m = Math.floor(ms / 60000)
+    const rest = (ms % 60000) / 1000
+    return `+${m}:${rest.toFixed(2).padStart(5, '0')}`
+  }
+  return `+${(ms / 1000).toFixed(2)}`
+}
+
+/*
+ * The gap cell.
+ *
+ * Positions arrive once a second, so a cell that simply printed each new value
+ * stepped a whole second's worth of change in one frame and then sat still —
+ * which reads as broken rather than as slow. This eases the DISPLAYED number
+ * toward the one that arrived, so the readout is always moving toward the
+ * truth and lands on it well before the next packet.
+ *
+ * It is a component of its own, not a hook in the list, so an animating gap
+ * re-renders one cell per frame instead of the whole HUD.
+ *
+ * `ms` absent means the server had nothing measured — first gate of the race, a
+ * lapped car with no banked crossing, a driver restored mid-race. Then the text
+ * it sent is drawn as-is and nothing animates, because there is no number to
+ * animate toward.
+ */
+const GapCell = ({ ms, laps, text }: { ms?: number; laps?: number; text: string }) => {
+  const [shown, setShown] = useState<number | null>(ms ?? null)
+  const cur = useRef<number | null>(ms ?? null)
+  const target = useRef<number | null>(ms ?? null)
+  const raf = useRef(0)
+
+  useEffect(() => {
+    target.current = ms ?? null
+
+    if (ms == null) {
+      cur.current = null
+      setShown(null)
+      return
+    }
+
+    // First value for this car: adopt it. Easing up from nothing would show a
+    // gap counting from zero that never existed.
+    if (cur.current == null) {
+      cur.current = ms
+      setShown(ms)
+      return
+    }
+
+    const step = () => {
+      const t = target.current
+      if (t == null || cur.current == null) return
+      const d = t - cur.current
+
+      // Under 5ms is below what the 2dp readout can show — land on it exactly
+      // rather than easing forever at an invisible distance.
+      if (Math.abs(d) < 5) {
+        cur.current = t
+        setShown(t)
+        return
+      }
+
+      cur.current += d * 0.2
+      setShown(cur.current)
+      raf.current = requestAnimationFrame(step)
+    }
+
+    cancelAnimationFrame(raf.current)
+    raf.current = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(raf.current)
+  }, [ms])
+
+  useEffect(() => () => cancelAnimationFrame(raf.current), [])
+
+  if (shown == null) return <span class="racer-gap-box">{text}</span>
+
+  return (
+    <span class="racer-gap-box">
+      {fmtGap(shown)}
+      {laps ? <small class="racer-gap-laps">{laps}L</small> : null}
+    </span>
+  )
+}
+
+/* How long a gained/lost place stays marked with an arrow. */
+const MOVE_HOLD_MS = 3500
+
 const Standings = ({ positions, mySource }: { positions: RacerEntry[], mySource?: number }) => {
   const all = positions || []
 
-  // Previous order, kept across renders so a place gained or lost can be shown
-  // as a direction rather than a number the driver has to diff themselves.
-  // Ref, not state: this must never itself cause a render.
+  /*
+   * Places gained and lost, shown as a direction rather than a number the
+   * driver has to diff themselves.
+   *
+   * This used to be computed DURING render, writing the new order into a ref as
+   * it went. Two things followed from that, both of which made the arrows
+   * useless: the comparison ran on every render — including the ones caused by
+   * the race clock ticking, which have nothing to do with the order — so a
+   * change was consumed and erased within a frame or two of appearing; and
+   * mutating a ref mid-render is a side effect in the render path.
+   *
+   * It is an effect on the positions payload now, and each change is stamped
+   * with the time it happened so the arrow can be held long enough to be seen.
+   */
   const prevPos = useRef<Record<string, number>>({})
-  const moved: Record<string, number> = {}
-  for (const r of all) {
-    const key = String(r.source)
-    const before = prevPos.current[key]
-    const now = Number(r.position)
-    if (before != null && Number.isFinite(now)) moved[key] = before - now  // >0 = gained
-    prevPos.current[key] = now
-  }
+  const [moves, setMoves] = useState<Record<string, { dir: number; at: number }>>({})
+
+  useEffect(() => {
+    const next: Record<string, { dir: number; at: number }> = {}
+    const now = Date.now()
+
+    for (const r of all) {
+      const key = String(r.source)
+      const pos = Number(r.position)
+      const before = prevPos.current[key]
+
+      if (before != null && Number.isFinite(pos) && before !== pos) {
+        next[key] = { dir: before - pos, at: now }     // >0 = gained
+      }
+      if (Number.isFinite(pos)) prevPos.current[key] = pos
+    }
+
+    if (Object.keys(next).length === 0) return
+
+    setMoves(m => ({ ...m, ...next }))
+
+    // Clear them on a timer rather than on the next payload: at 1 Hz, "until
+    // the next update" is an arrow that blinks for one second.
+    const t = setTimeout(() => {
+      const cutoff = Date.now() - MOVE_HOLD_MS + 50
+      setMoves(m => {
+        const kept: typeof m = {}
+        for (const k in m) if (m[k].at > cutoff) kept[k] = m[k]
+        return kept
+      })
+    }, MOVE_HOLD_MS)
+
+    return () => clearTimeout(t)
+  }, [positions])
 
   // Show up to 6: top 6, but if I'm outside them swap me into the last slot
   let shown = all.slice(0, MAX_STANDINGS)
@@ -275,7 +405,7 @@ const Standings = ({ positions, mySource }: { positions: RacerEntry[], mySource?
       {shown.map(r => {
         const isMe = r.source === mySource
         const isLeader = Number(r.position) === 1
-        const delta = moved[String(r.source)] || 0
+        const delta = moves[String(r.source)]?.dir || 0
         return (
           <div key={r.source} class={`racer-row ${isMe ? 'is-me' : ''}${r.dc ? ' is-dc' : ''}`}>
             {/* ONE marker slot beside the position, not two. The name is the
@@ -312,7 +442,11 @@ const Standings = ({ positions, mySource }: { positions: RacerEntry[], mySource?
               {r.dc && <HudIcon icon={WifiOff} size={11} class="ico-dc" />}
             </span>
 
-            <span class="racer-gap-box">{r.gap || (isMe ? 'YOU' : '--')}</span>
+            <GapCell
+              ms={r.gapMs}
+              laps={r.gapLaps}
+              text={r.gap || (isMe ? 'YOU' : '--')}
+            />
           </div>
         )
       })}
@@ -427,16 +561,72 @@ interface CPWaypoint {
  * down to the gate point. Tells you where the gate actually is, which matters
  * on an unfamiliar track or when a gate sits behind geometry.
  */
+/* How hard the pill is pulled toward the projected point each frame. Lower is
+   steadier and laggier; 0.35 settles inside ~4 frames, which is under the time
+   it takes to notice, while still absorbing a frame of camera shake. */
+const PILL_SMOOTH = 0.35
+
 const CPDistancePill = ({ pill, dist }: { pill?: PillData; dist: number }) => {
-  if (!pill || !pill.onScreen || !dist || dist <= 0) return null
+  const visible = !!(pill && pill.onScreen && dist && dist > 0)
+
+  /*
+   * The pill is driven by World3dToScreen2d, which is re-projected every frame
+   * from the camera. That projection carries every bit of camera shake, engine
+   * idle and suspension travel the car has — so a gate 200 m away, whose screen
+   * position barely changes, still jittered a pixel or two in every direction
+   * and read as unstable.
+   *
+   * The position is eased toward the projected point instead, and written
+   * STRAIGHT TO THE NODE rather than through state: this runs at 60fps, and a
+   * setState per frame would re-render the pill sixty times a second to move it
+   * a fraction of a pixel.
+   *
+   * Hooks run unconditionally and the visibility test happens after them —
+   * returning early above a hook changes the hook order between renders.
+   */
+  const el = useRef<HTMLDivElement>(null)
+  const target = useRef({ x: 0, y: 0 })
+  const cur = useRef<{ x: number; y: number } | null>(null)
+  const raf = useRef(0)
+
+  target.current = { x: pill?.x ?? 0, y: pill?.y ?? 0 }
+
+  // Dropping off screen and coming back must not be animated: the gate is
+  // somewhere else entirely by then, and easing to it drags the pill across the
+  // screen. Adopt the new point outright.
+  if (!visible) cur.current = null
+
+  useEffect(() => {
+    const step = () => {
+      const t = target.current
+
+      if (!cur.current) {
+        cur.current = { x: t.x, y: t.y }
+      } else {
+        cur.current.x += (t.x - cur.current.x) * PILL_SMOOTH
+        cur.current.y += (t.y - cur.current.y) * PILL_SMOOTH
+      }
+
+      const node = el.current
+      if (node) {
+        node.style.transform =
+          `translate3d(${(cur.current.x * 100).toFixed(3)}vw, ${(cur.current.y * 100).toFixed(3)}vh, 0)`
+      }
+
+      raf.current = requestAnimationFrame(step)
+    }
+
+    raf.current = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(raf.current)
+  }, [])
+
+  if (!visible) return null
+
   const close = dist < 80
   const urgent = dist < 30
-  // GPU-composited transform (no left/top layout thrash) = rock-steady tracking
-  const style = {
-    transform: `translate3d(${(pill.x * 100).toFixed(3)}vw, ${(pill.y * 100).toFixed(3)}vh, 0)`,
-  }
+
   return (
-    <div class="cp-wp" style={style}>
+    <div class="cp-wp" ref={el}>
       <div class={`cp-wp-inner${close ? ' close' : ''}${urgent ? ' urgent' : ''}`}>
         <div class="cp-chip">
           <HudIcon icon={MapPin} size={10} class="ico-wp" />
@@ -753,6 +943,9 @@ function Countdown({ data }: { data: any }) {
 
 /* ── Main App ──────────────────────────────────────────────── */
 
+/* Bumped with fxmanifest.lua. See the uiReady effect below for why it exists. */
+const UI_BUILD = '1.5.2'
+
 export function App() {
   const [showCountdown, setShowCountdown] = useState(false)
   const [showOverlay, setShowOverlay] = useState(false)
@@ -856,6 +1049,27 @@ export function App() {
     overlayRef.current = next
     setOverlay({ ...next })
   }
+
+  /*
+   * Announce which BUILD of this page is live, in the game console.
+   *
+   * FiveM caches NUI assets, and index.html has a stable name — so a client can
+   * keep serving yesterday's page pointing at yesterday's hashed bundles, and
+   * every symptom of that looks like the code being wrong rather than stale.
+   * There is no way to tell from the game side otherwise: the Lua half is fresh
+   * either way, so exports fire, prints appear, and nothing renders.
+   *
+   * If the line this prints does not match the version in fxmanifest.lua, the
+   * page is cached — not broken.
+   */
+  useEffect(() => {
+    if (typeof GetParentResourceName === 'undefined') return
+    fetch(`https://${GetParentResourceName()}/uiReady`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ build: UI_BUILD }),
+    }).catch(() => {})
+  }, [])
 
   useEffect(() => {
     if (typeof GetParentResourceName === 'undefined') {

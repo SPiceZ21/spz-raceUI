@@ -28,11 +28,11 @@ export const MOCK_RACE_DATA = {
       // slot awaiting reconnect, and a lapped car (long-form gap) so the gap
       // box is judged at its widest.
       { source: 2, name: "DRIFT_KING",  position: 1, gap: "LEADER",      licenseClass: "S", nation: "jp", raceNumber: 7,  crew_tag: "[APX]" },
-      { source: 1, name: "SPICEZ",      position: 2, gap: "+1.25",       licenseClass: "S", nation: "in", raceNumber: 21, crew_tag: "[NR]" },
-      { source: 3, name: "SHADOW_GRID", position: 3, gap: "+3.42",       licenseClass: "A", nation: "de", raceNumber: 44, crew_tag: "[NR]" },
-      { source: 4, name: "APEX_HUNTER", position: 4, gap: "+5.10", licenseClass: "A", nation: "fr", raceNumber: 88 },
-      { source: 5, name: "NIGHT_OWL",   position: 5, gap: "+8.77",       licenseClass: "B", nation: "gb", raceNumber: 18, dc: true },
-      { source: 6, name: "REDLINE",     position: 6, gap: "+1:02.88 1L", licenseClass: "C", nation: "us", raceNumber: 96 }
+      { source: 1, name: "SPICEZ",      position: 2, gap: "+1.25", gapMs: 1250, licenseClass: "S", nation: "in", raceNumber: 21, crew_tag: "[NR]" },
+      { source: 3, name: "SHADOW_GRID", position: 3, gap: "+3.42", gapMs: 3420, licenseClass: "A", nation: "de", raceNumber: 44, crew_tag: "[NR]" },
+      { source: 4, name: "APEX_HUNTER", position: 4, gap: "+5.10", gapMs: 5100, licenseClass: "A", nation: "fr", raceNumber: 88 },
+      { source: 5, name: "NIGHT_OWL",   position: 5, gap: "+8.77", gapMs: 8770, licenseClass: "B", nation: "gb", raceNumber: 18, dc: true },
+      { source: 6, name: "REDLINE",     position: 6, gap: "+1:02.88 1L", gapMs: 62880, gapLaps: 1, licenseClass: "C", nation: "us", raceNumber: 96 }
     ]
   },
   sectors: [

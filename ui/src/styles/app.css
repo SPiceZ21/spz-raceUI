@@ -442,12 +442,26 @@ body {
 /* A held slot is still in the race but is not driving — dim the whole row so
    the tower reads as "five cars racing", not six. */
 .racer-row.is-dc .racer-name,
-.racer-row.is-dc .racer-gap-box { opacity: 0.55; }
+.racer-row.is-dc /* The "1L" that follows a lapped car's time. Set smaller and dimmer than the
+   number so the gap still reads as one value with a note on it, rather than as
+   two competing figures. */
+.racer-gap-laps {
+  margin-left: 3px;
+  font-size: 0.72em;
+  font-weight: 700;
+  opacity: 0.6;
+}
+
+.racer-gap-box { opacity: 0.55; }
 
 /* nation flag + F1-style race number */
+/* Raised from 18x12. The tower is read at a glance from the corner of the eye
+   and a flag that small was a smudge. Every pixel added to a fixed column comes
+   out of the name, which is the only elastic cell in the row — this is a
+   deliberate 4px of that budget, not an accident. */
 .racer-flag {
-  width: 18px;
-  height: 12px;
+  width: 22px;
+  height: 15px;
   object-fit: cover;
   border-radius: 2px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
@@ -459,15 +473,15 @@ body {
 }
 .racer-num {
   font-family: var(--font-mono);
-  font-size: 11.5px;
+  font-size: 13px;
   font-weight: 800;
   font-style: italic;
   color: rgba(255, 255, 255, 0.75);
   background: rgba(255, 255, 255, 0.07);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 3px;
-  padding: 0 3px;
-  min-width: 17px;
+  padding: 1px 4px;
+  min-width: 20px;
   text-align: center;
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
@@ -1350,6 +1364,9 @@ body {
   pointer-events: none;
   z-index: 39;
   will-change: transform;
+  /* No transition here: the easing is done in script (see PILL_SMOOTH), and a
+     CSS transition on top of it would be a second filter chasing the first. */
+  transition: none;
   /* Cancel the root scale. The x/y below are World3dToScreen2d output in vw/vh,
      and viewport units are NOT scaled by zoom — they resolve against the real
      viewport and are then drawn 1.1x larger, which walked the pill away from
@@ -1377,7 +1394,7 @@ body {
   justify-content: center;
   gap: 4px;
   min-width: 104px;
-  padding: 7px 16px;
+  padding: 11px 18px;
   border-radius: 7px;
   background: rgba(6, 7, 9, 0.55);
   border: 1px solid rgba(255, 255, 255, 0.10);
@@ -1385,7 +1402,7 @@ body {
 }
 .cp-chip-val {
   font-family: var(--font-display);
-  font-size: 36px;
+  font-size: 40px;
   font-weight: 900;
   font-style: italic;
   line-height: 1;
@@ -1622,11 +1639,11 @@ body {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
   pointer-events: none;
   z-index: 30;
-  /* Trimmed against the rest of the HUD, one pass at a time: 0.95 x 0.95 x 0.98.
-     Scaled here rather than by shaving a pixel off each value below, which
-     would round unevenly and pull the keycap, label and timer out of
-     proportion with each other. */
-  zoom: 0.88445;
+  /* Trimmed against the rest of the HUD, one pass at a time:
+     0.95 x 0.95 x 0.98 x 0.98. Scaled here rather than by shaving a pixel off
+     each value below, which would round unevenly and pull the keycap, label and
+     timer out of proportion with each other. */
+  zoom: 0.86676;
 }
 .lobby-pill.join { border-color: rgba(var(--color-primary-rgb), 0.35); }
 .lp-key {
