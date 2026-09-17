@@ -219,12 +219,11 @@ interface OverlayState {
    They are DEFAULT bindings; a rebind in Settings is not reflected, because
    FiveM exposes no way to read a live command binding back. */
 
-interface KeyHints { respawn?: string; flip?: string; standings?: string; rewind?: string; results?: string }
+interface KeyHints { respawn?: string; flip?: string; standings?: string; results?: string }
 
 const KeyHintBar = ({ hints, listHidden }: { hints: KeyHints, listHidden: boolean }) => {
   const items: [string | undefined, string][] = [
     [hints.standings, listHidden ? 'SHOW LIST' : 'HIDE LIST'],
-    [hints.rewind, 'REWIND'],
     [hints.respawn, 'LAST CP'],
     [hints.flip, 'FLIP'],
     // Pushed by spz-leaderboard, which owns this key. Last in the strip: it is
@@ -566,6 +565,28 @@ interface CPWaypoint {
    it takes to notice, while still absorbing a frame of camera shake. */
 const PILL_SMOOTH = 0.35
 
+/*
+ * Stem length, and why it is not simply the number in the stylesheet.
+ *
+ * The chip hangs at the TOP of the stem and the gate is at the bottom, so the
+ * stem is also how far the chip is pushed up the screen. At the authored 880px
+ * (~800 real px once .cp-wp divides out --hud-scale) a gate projecting at
+ * mid-screen on 1080p puts the chip at roughly -470px — the readout is off the
+ * frame entirely and only the line is left, which is the one part of this
+ * element that is decoration rather than information.
+ *
+ * So the stem is a MAXIMUM, not a fixed height: it shortens to whatever fits
+ * above the gate. The chip stays on screen, the dot stays on the gate, and the
+ * stem is as long as the frame allows.
+ */
+const STEM_MAX = 880    // must match .cp-wp-stem's authored height in app.css
+const STEM_MIN = 90     // below this it stops reading as a stem at all
+// Measured, not guessed: the chip is 83 of the pill's own px tall and the dot
+// is 9 with a -5 margin, so the fixed part of the column is 87. The rest is
+// clearance, so the readout does not end up hugging the top edge of the frame.
+const CHIP_H   = 132
+const HUD_SCALE = 1.1   // --hud-scale in app.css; a static token, so read once
+
 const CPDistancePill = ({ pill, dist }: { pill?: PillData; dist: number }) => {
   const visible = !!(pill && pill.onScreen && dist && dist > 0)
 
@@ -625,6 +646,16 @@ const CPDistancePill = ({ pill, dist }: { pill?: PillData; dist: number }) => {
       if (node) {
         node.style.transform =
           `translate3d(${(cur.current.x * 100).toFixed(3)}vw, ${(cur.current.y * 100).toFixed(3)}vh, 0)`
+
+        /*
+         * Room above the gate, expressed in the pill's OWN pixels — .cp-wp runs
+         * at zoom 1/HUD_SCALE, so a real pixel is HUD_SCALE of its pixels.
+         * Written as a custom property rather than straight onto the stem so
+         * the height still lives in the stylesheet with the rest of the shape.
+         */
+        const avail = cur.current.y * window.innerHeight * HUD_SCALE
+        const stem = Math.max(STEM_MIN, Math.min(STEM_MAX, avail - CHIP_H))
+        node.style.setProperty('--cp-stem', `${stem.toFixed(0)}px`)
       }
     }
 
@@ -778,33 +809,6 @@ const LobbyPill = ({ lb }: { lb: LobbyState }) => {
           <span class="lp-sub"><span class="lp-key sm">E</span> join</span>
         </>
       )}
-    </div>
-  )
-}
-
-/* ── Rewind timeline (Forza-style scrub bar) ──────────────── */
-
-interface RewindState {
-  active: boolean
-  secondsBack?: number
-  fraction?: number       // 0..1 of the buffer scrubbed so far
-  bufferSeconds?: number
-  creditMs?: number       // clock handed back so far in this scrub
-}
-
-const RewindTimeline = ({ rw }: { rw: RewindState }) => {
-  if (!rw || !rw.active) return null
-  const pct = Math.max(0, Math.min(1, rw.fraction ?? 0)) * 100
-  // The clock rewinds with the car; showing what it is giving back is what
-  // makes the scrub read as "undo" rather than "teleport".
-  const credit = (rw.creditMs ?? 0) / 1000
-  return (
-    <div class="rewind-panel">
-      <div class="rewind-track">
-        <div class="rewind-track-fill" style={{ width: `${pct}%` }} />
-        <div class="rewind-track-head" style={{ left: `${pct}%` }} />
-      </div>
-      {credit > 0.05 && <div class="rewind-credit">−{credit.toFixed(1)}s</div>}
     </div>
   )
 }
@@ -972,7 +976,6 @@ export function App() {
   const [warmup, setWarmup] = useState<WarmupState>({ remaining: 0, total: 0 })
   const [lobby, setLobby] = useState<LobbyState>({ mode: 'hidden' })
   const [wanted, setWanted] = useState<WantedState>({ stars: 0, max: 5 })
-  const [rewind, setRewind] = useState<RewindState>({ active: false })
   const [sectors, setSectors] = useState<(SectorEntry | null)[]>([null, null, null])
   const [split, setSplit] = useState<{ delta: number | null; split?: number; cp: number; total: number; key: number } | null>(null)
   const [showStandings, setShowStandings] = useState(true)
@@ -1121,7 +1124,7 @@ export function App() {
           // Must match the defaults in Docs/keybinds.md — this is browser-preview
           // seed data only, but a stale copy here is how a screenshot ends up
           // teaching the wrong key.
-          setKeyHints({ standings: 'N', rewind: 'B', respawn: 'F4', flip: 'K', results: 'F6' })
+          setKeyHints({ standings: 'N', respawn: 'F4', flip: 'K', results: 'F6' })
         }
         setSectors((D as any).sectors ?? [null, null, null])
         // ?fl=1 shows someone else taking the fastest lap, ?fl=mine your own.
@@ -1347,12 +1350,21 @@ export function App() {
           setWarmup({ remaining: 0, total: 0 })
           break
 
+        /*
+         * Rewind — CLOCK ONLY. The scrub bar this used to draw is gone.
+         *
+         * The message stays because it was never only a UI feed: the race
+         * clocks are a local interval here, and spz-races hands back real time
+         * when you rewind. Without this the displayed race and lap times would
+         * keep running through a scrub and be wrong by the length of it for the
+         * rest of the race — a correctness bug, not a missing panel.
+         *
+         * Applied as a growing delta so the timer runs backward while the key
+         * is held rather than jumping once on release, and so a scrub cannot be
+         * counted twice. `active: false` (spz-raceUI:HideRewind) resets the
+         * baseline for the next scrub.
+         */
         case 'rewind': {
-          // The race clocks are a local interval, so the rewind's clock credit
-          // is applied here as a growing delta: the timer visibly runs backward
-          // while the key is held instead of jumping once on release. Only the
-          // increase since the last frame is applied, so a scrub cannot be
-          // counted twice, and the ref resets when the scrub ends.
           const credit = data.active ? (data.creditMs ?? 0) : 0
           const delta = credit - rewindCreditRef.current
           if (delta > 0) {
@@ -1360,14 +1372,6 @@ export function App() {
             lapStartRef.current += delta
           }
           rewindCreditRef.current = credit
-
-          setRewind({
-            active: !!data.active,
-            secondsBack: data.secondsBack ?? 0,
-            fraction: data.fraction ?? 0,
-            bufferSeconds: data.bufferSeconds ?? 10,
-            creditMs: credit,
-          })
           break
         }
 
@@ -1410,7 +1414,6 @@ export function App() {
           setShowCountdown(false)
           setShowStats(false)
           setWarmup({ remaining: 0, total: 0 })
-          setRewind({ active: false })
           rewindCreditRef.current = 0
           break
       }
@@ -1457,7 +1460,6 @@ export function App() {
 
       <WarmupPanel wu={warmup} />
       <LobbyPill lb={lobby} />
-      <RewindTimeline rw={rewind} />
 
       {showStats && postRace && (
         <PostRace data={postRace} autoClose={autoClose} onDismiss={dismissStats} />

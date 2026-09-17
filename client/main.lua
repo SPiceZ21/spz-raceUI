@@ -264,12 +264,25 @@ local function UpdateWanted(data)
     SendNUIMessage({ action = 'wanted', data = data or {} })
 end
 
--- Rewind timeline — data = { active, secondsBack, fraction (0..1), bufferSeconds,
---                            creditMs = clock credit so far in this scrub }
+-- Rewind — data = { active, secondsBack, fraction (0..1), bufferSeconds,
+--                   creditMs = clock credit so far in this scrub }
+--
+-- THE SCRUB BAR THIS FED IS GONE. These are kept, and spz-races must keep
+-- calling them, because the payload was never only a picture: `creditMs` is the
+-- real time a rewind hands back, and the race/lap clocks are a local interval
+-- in the page. Stop sending it and the displayed times run straight through a
+-- scrub and stay wrong by its length for the rest of the race.
+--
+-- `secondsBack`, `fraction` and `bufferSeconds` are now ignored by the page.
+-- They are left in the signature rather than dropped: spz-races builds them
+-- anyway, and a narrower signature here would be one more thing to change if a
+-- readout ever comes back.
 local function UpdateRewind(data)
     SendNUIMessage({ action = 'rewind', data = data or {} })
 end
 
+-- End of a scrub: resets the page's credit baseline so the next one starts from
+-- zero. Still required.
 local function HideRewind()
     SendNUIMessage({ action = 'rewind', data = { active = false } })
 end

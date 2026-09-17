@@ -494,8 +494,24 @@ body {
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 15.5px;
-  font-weight: 700;
+  /* Panchang Regular. The list used to inherit the body face (Poppins) at 700,
+     which made it the heaviest type in the left column and louder than the
+     position numbers beside it. Panchang is the display face the rest of the
+     brand is set in, and at 400 the names sit under the numbers instead of
+     fighting them.
+
+     fonts.css declares Panchang-Regular.ttf at exactly 400 AFTER the variable
+     face that also covers 400, so this resolves to the real static Regular
+     rather than an interpolated instance of the variable. */
+  font-family: var(--font-primary);
+  /* 13px, not the 15.5px this cell used to run at. Panchang is a much wider
+     face than the Poppins it replaced — measured on this list, the same names
+     set 45-57% wider at the same size, and the cell is only 140px. At 15.5px
+     every name over about eight characters ellipsised, including ones that fit
+     comfortably before. 13px puts the amount of name you can actually read back
+     where it was. */
+  font-size: 13px;
+  font-weight: 400;
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: rgba(255, 255, 255, 0.8);
@@ -1430,11 +1446,19 @@ body {
 .cp-wp-inner.urgent .cp-chip { border-color: rgba(var(--color-primary-rgb), 0.75); }
 
 /* thin stem down to the checkpoint point */
-/* 4x taller. The chip now floats well clear of the cars ahead of you, and the
-   stem is what says which gate on the road it belongs to over that distance. */
+/* Doubled again, to 8x the original 110px: the chip floats well clear of the
+   cars ahead of you, and the stem is what says which gate on the road it
+   belongs to over that distance.
+
+   880px is the CEILING, not the height. CPDistancePill writes --cp-stem every
+   frame with whatever fits above the gate, because the chip hangs off the top
+   of this stem — at a flat 880px (~800 real px once .cp-wp divides out
+   --hud-scale) a gate projecting mid-screen on 1080p pushed the distance
+   readout ~470px off the top of the frame. The fallback here is what shows if
+   that script has not run yet. */
 .cp-wp-stem {
   width: 2px;
-  height: 440px;
+  height: var(--cp-stem, 880px);
   background: linear-gradient(to bottom, rgba(var(--color-primary-rgb), 0.7), rgba(var(--color-primary-rgb), 0));
 }
 .cp-wp-dot {
@@ -1703,54 +1727,6 @@ body {
 @keyframes lp-dot-pulse {
   0%, 100% { opacity: 1; }
   50%      { opacity: 0.4; }
-}
-
-/* ── Rewind timeline (bottom-center scrub bar, minimal) ────── */
-.rewind-panel {
-  position: fixed;
-  bottom: 6vh;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 220px;
-  pointer-events: none;
-  z-index: 40;
-  animation: rt-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.rewind-track {
-  position: relative;
-  width: 100%;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.12);
-  border-radius: 99px;
-  overflow: visible;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-}
-.rewind-track-fill {
-  height: 100%;
-  background: var(--color-secondary);
-  border-radius: 99px;
-}
-.rewind-track-head {
-  position: absolute;
-  top: 50%;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
-  transform: translate(-50%, -50%);
-}
-/* Clock being handed back by the scrub — sits under the bar so the eye reads
-   position first, cost second. */
-.rewind-credit {
-  margin-top: 6px;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: var(--color-secondary);
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
 }
 
 /* ── Post-race results — compact, non-blocking toast ───────── */
