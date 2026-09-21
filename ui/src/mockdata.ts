@@ -62,6 +62,23 @@ export const MOCK_RACE_DATA = {
     level: 24,
     levelUp: true
   },
+  // The race-intro card (?scene=intro). Long track name and a long add-on
+  // vehicle name on purpose: those are the two values that come from a poll the
+  // server does not control the wording of, and the card has to hold them.
+  raceIntro: {
+    track: "Vinewood Hills Sprint",
+    type: "sprint",
+    laps: 3,
+    length: "6.8 km",
+    vehicle: "Annis Elegy Retro Custom",
+    code: "gbelegyrh2",
+    class: "A",
+    topSpeed: 197,
+    accel: 82,
+    handling: 76,
+    cops: true,
+    traffic: "light",
+  },
   tracks: [
     { name: "Downtown Grand Prix", type: "circuit", laps: 3, length: "4.2 km", index: 1 },
     { name: "Vinewood Hills Sprint", type: "sprint", length: "6.8 km", index: 2 },

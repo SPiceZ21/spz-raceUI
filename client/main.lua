@@ -209,6 +209,54 @@ local function HideWarmup()
     SendNUIMessage({ action = 'warmupEnd', data = {} })
 end
 
+-- ── Race intro ───────────────────────────────────────────────────────────────
+--
+-- The cover that hides the grid teleport, the sweep that opens onto the start
+-- camera, and the card naming the race. Driven by spz-races: see
+-- server/countdown.lua for the sequence and client/nui_bridge.lua for the relay.
+--
+-- THE WATCHDOG IS THE IMPORTANT PART. This puts an opaque full-screen element
+-- over a live game, and every way a race can go wrong between the warmup
+-- ending and the lights — a cancel, a crash in the state machine, a dropped
+-- event, spz-races restarting mid-sequence — would otherwise leave the player
+-- staring at it with no way to clear it. So the cover carries its own deadline
+-- and lifts itself, whatever else happens. Nothing about the sequence depends
+-- on this firing; it exists for when the sequence does not.
+local INTRO_COVER_MAX_MS = 20000
+local INTRO_CARD_MAX_MS  = 45000
+
+local _introToken = 0
+
+local function HideRaceIntro()
+    _introToken = _introToken + 1
+    SendNUIMessage({ action = 'raceIntro', data = { phase = 'end' } })
+end
+
+--- phase = 'cover' | 'reveal' | 'end'
+--- reveal also carries { track, type, laps, vehicle, class, cops, traffic }
+local function ShowRaceIntro(data)
+    data = data or {}
+    local phase = data.phase or 'cover'
+
+    if phase == 'end' then
+        HideRaceIntro()
+        return
+    end
+
+    _introToken = _introToken + 1
+    local token = _introToken
+
+    SendNUIMessage({ action = 'raceIntro', data = data })
+
+    local deadline = (phase == 'cover') and INTRO_COVER_MAX_MS or INTRO_CARD_MAX_MS
+    SetTimeout(deadline, function()
+        if _introToken ~= token then return end   -- superseded; not our problem
+        print(("^3[spz-raceUI] race intro '%s' timed out after %dms — clearing.^7")
+            :format(phase, deadline))
+        HideRaceIntro()
+    end)
+end
+
 -- ── Key hints ────────────────────────────────────────────────────────────────
 -- The HUD prints the in-race keys so a driver never has to leave the race to
 -- find out how to recover. Two of the three keys are owned by spz-races
@@ -306,6 +354,8 @@ exports('UpdateSector', UpdateSector)
 exports('ResetSectors', ResetSectors)
 exports('ShowWarmup', ShowWarmup)
 exports('HideWarmup', HideWarmup)
+exports('ShowRaceIntro', ShowRaceIntro)
+exports('HideRaceIntro', HideRaceIntro)
 exports('UpdateLobby', UpdateLobby)
 exports('UpdateWanted', UpdateWanted)
 exports('UpdateRewind', UpdateRewind)

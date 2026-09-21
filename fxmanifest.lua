@@ -23,6 +23,8 @@ exports {
     'UpdateCPWaypoint',
     'ShowWarmup',
     'HideWarmup',
+    'ShowRaceIntro',
+    'HideRaceIntro',
     'UpdateLobby',
     'UpdateWanted',
     'SetRaceOverlayVisible',

@@ -5,6 +5,7 @@ import {
 } from 'lucide-preact'
 
 import { ProgressionStrip } from './components/ProgressionStrip'
+import { IntroCover, RaceBriefing, COVER_EXIT_MS, type IntroDetails } from './RaceIntro'
 import './styles/app.css'
 
 const RESOURCE = typeof GetParentResourceName === 'undefined' ? 'spz-raceUI' : GetParentResourceName()
@@ -982,6 +983,51 @@ export function App() {
   const [keyHints, setKeyHints] = useState<KeyHints>({})
   const [fastest, setFastest] = useState<{ name: string; ms: number; mine: boolean; key: number } | null>(null)
 
+  // ── Race intro (cover → sweep → details card) ─────────────────────────────
+  //
+  // Three pieces of state rather than one enum, because they overlap on
+  // purpose: the cover is still sweeping while the card is already coming up,
+  // and the card outlives the cover by the whole camera move.
+  const [cover, setCover] = useState(false)
+  const [coverFading, setCoverFading] = useState(false)
+  const [introCard, setIntroCard] = useState<IntroDetails | null>(null)
+  const [introLeaving, setIntroLeaving] = useState(false)
+  const coverTimerRef = useRef<any>(null)
+  const introTimerRef = useRef<any>(null)
+  // The window spz-races gives the briefing, in a ref rather than state: it is
+  // read once when the briefing mounts to divide time between its slides, and
+  // changing it mid-sequence would re-time slides that are already running.
+  const introHoldRef = useRef<number | undefined>(undefined)
+  // Browser preview only (?slide=…) — see the intro scene below.
+  const introPinRef = useRef<any>(undefined)
+
+  // One place to take the whole intro down, so every route out of it — the
+  // lights going out, a cancelled race, hideAll — leaves the same clean state.
+  // A cover that fails to unmount is a black screen over a live race, so this
+  // is deliberately unconditional and safe to call at any time.
+  const clearIntro = () => {
+    if (coverTimerRef.current) clearTimeout(coverTimerRef.current)
+    if (introTimerRef.current) clearTimeout(introTimerRef.current)
+    coverTimerRef.current = null
+    introTimerRef.current = null
+    setCover(false)
+    setCoverFading(false)
+    setIntroCard(null)
+    setIntroLeaving(false)
+  }
+
+  // Card exit: animate out, then unmount. Split from clearIntro because the
+  // normal path (staging ending) should be seen leaving, while an abort must
+  // not wait for an animation.
+  const dismissIntroCard = () => {
+    if (introTimerRef.current) clearTimeout(introTimerRef.current)
+    setIntroLeaving(true)
+    introTimerRef.current = setTimeout(() => {
+      setIntroCard(null)
+      setIntroLeaving(false)
+    }, 420)   // must outlast .rb-root.is-leaving in intro.css
+  }
+
   // Auto-hide the split delta a few seconds after each crossing
   useEffect(() => {
     if (!split) return
@@ -1111,6 +1157,42 @@ export function App() {
           return
         }
 
+        /*
+         * ?scene=intro — the warmup→grid sequence, played through.
+         *
+         * It runs on a timer rather than showing one frozen state because the
+         * only thing worth judging here is the hand-off: whether the card is
+         * arriving as the panels leave, or after them. A still of either end
+         * of it tells you nothing.
+         *
+         *   ?stage=cover    hold on the cover, no sweep (judge the brand frame)
+         *   ?stage=brief    skip to the briefing alone
+         *   ?delay=ms       how long the cover holds before sweeping (900)
+         *   ?hold=ms        the briefing's whole window, split across its
+         *                   slides — the same number the server sends
+         */
+        if (scene === 'intro') {
+          const stage = qs.get('stage')
+          const intro = (D as any).raceIntro as IntroDetails
+          introHoldRef.current = qs.get('hold') ? Number(qs.get('hold')) : 7500
+          introPinRef.current = qs.get('slide') || undefined
+
+          if (stage === 'brief') {
+            setIntroCard(intro)
+            return
+          }
+
+          setCover(true)
+          if (stage === 'cover') return
+
+          setTimeout(() => {
+            setIntroCard(intro)
+            setCoverFading(true)
+            setTimeout(() => { setCover(false); setCoverFading(false) }, COVER_EXIT_MS)
+          }, Number(qs.get('delay') ?? 900))
+          return
+        }
+
         // race (default) — the HUD as it looks mid-lap
         setOverlay(D.overlay)
         setShowOverlay(true)
@@ -1180,7 +1262,13 @@ export function App() {
           applyTheme(theme)
           break
 
+        // The lights are the hard deadline for the intro: whatever else is on
+        // screen, it is gone before the first number. Unconditional — this
+        // handler is registered once, so a `cover`/`introCard` read here would
+        // be the values from first mount, not the live ones. Clearing when
+        // there is nothing to clear is a no-op.
         case 'countdown':
+          clearIntro()
           setCountdown(data)
           setShowCountdown(true)
           if (data.laps || data.totalCheckpoints) {
@@ -1351,6 +1439,72 @@ export function App() {
           break
 
         /*
+         * Race intro. Three messages, in order:
+         *
+         *   phase 'cover'  — go opaque NOW. spz-races sends this before it
+         *                    teleports the field back onto the grid; whatever
+         *                    the teleport looks like happens behind it.
+         *   phase 'reveal' — start the sweep and bring the card up with it.
+         *                    The panels open onto the start-line camera that
+         *                    is already moving underneath.
+         *   phase 'end'    — briefing out, before the 3-2-1.
+         *
+         * Every phase is idempotent and 'end' also clears anything earlier, so
+         * a dropped or duplicated message cannot strand the cover on screen.
+         */
+        case 'raceIntro': {
+          const phase = data.phase
+
+          if (phase === 'cover') {
+            if (coverTimerRef.current) clearTimeout(coverTimerRef.current)
+            coverTimerRef.current = null
+            setIntroCard(null)
+            setIntroLeaving(false)
+            setCoverFading(false)
+            setCover(true)
+          } else if (phase === 'reveal') {
+            introHoldRef.current = data.holdMs
+            setIntroCard({
+              track: data.track,
+              type: data.type,
+              laps: data.laps,
+              length: data.length,
+              vehicle: data.vehicle,
+              class: data.class,
+              topSpeed: data.topSpeed,
+              accel: data.accel,
+              handling: data.handling,
+              cops: !!data.cops,
+              traffic: data.traffic,
+            })
+            setIntroLeaving(false)
+
+            // The sweep only has something to do if a cover is up. Arriving
+            // without one (a client that joined late, or a resource restarted
+            // mid-sequence) still gets the briefing — it just appears rather
+            // than being uncovered.
+            setCover(c => {
+              if (c) setCoverFading(true)
+              return c
+            })
+            if (coverTimerRef.current) clearTimeout(coverTimerRef.current)
+            coverTimerRef.current = setTimeout(() => {
+              setCover(false)
+              setCoverFading(false)
+              coverTimerRef.current = null
+            }, COVER_EXIT_MS)
+          } else {
+            // 'end', or anything unrecognised: take it all down.
+            if (coverTimerRef.current) clearTimeout(coverTimerRef.current)
+            coverTimerRef.current = null
+            setCover(false)
+            setCoverFading(false)
+            dismissIntroCard()
+          }
+          break
+        }
+
+        /*
          * Rewind — CLOCK ONLY. The scrub bar this used to draw is gone.
          *
          * The message stays because it was never only a UI feed: the race
@@ -1406,6 +1560,7 @@ export function App() {
 
         case 'tt_hide':
         case 'hideAll':
+          clearIntro()
           stopRaceTimer()
           if (autoCloseRef.current) clearInterval(autoCloseRef.current)
           showStatsRef.current = false
@@ -1464,6 +1619,19 @@ export function App() {
       {showStats && postRace && (
         <PostRace data={postRace} autoClose={autoClose} onDismiss={dismissStats} />
       )}
+
+      {/* Last in the tree and highest in z: the intro covers the HUD, never
+          the other way round. The card is a sibling of the cover, not a child,
+          so the sweep uncovers it instead of taking it away. */}
+      {introCard && (
+        <RaceBriefing
+          d={introCard}
+          holdMs={introHoldRef.current}
+          leaving={introLeaving}
+          pin={introPinRef.current}
+        />
+      )}
+      {cover && <IntroCover fading={coverFading} />}
     </div>
   )
 }
