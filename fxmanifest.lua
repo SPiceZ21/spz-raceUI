@@ -29,7 +29,8 @@ exports {
     'UpdateWanted',
     'SetRaceOverlayVisible',
     'HideAll',
-    'ShowPostRaceStats'
+    'ShowPostRaceStats',
+    'PlaySound'
 }
 
 dependencies {

@@ -367,6 +367,15 @@ exports('TT_UpdateHUD', TT_UpdateHUD)
 exports('TT_Hide', TT_Hide)
 exports('TT_Broadcast', TT_Broadcast)
 
+-- One-shot UI sound. `name` keys the clip table in ui/src/sfx.ts (files live
+-- in ui/public/aud/); `volume` is 0..1 and defaults to full.
+-- Used for the checkpoint chimes, which are custom clips rather than
+-- PlaySoundFrontend game audio and so have to go through the NUI page.
+local function PlaySound(name, volume)
+    SendNUIMessage({ action = 'sound', data = { name = name, volume = volume } })
+end
+exports('PlaySound', PlaySound)
+
 -- Fastest lap banner — data = { name, ms, mine }
 local function ShowFastestLap(data)
     SendNUIMessage({ action = 'fastestLap', data = data or {} })

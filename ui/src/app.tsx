@@ -5,6 +5,7 @@ import {
 } from 'lucide-preact'
 
 import { ProgressionStrip } from './components/ProgressionStrip'
+import { playSfx } from './sfx'
 import { IntroCover, RaceBriefing, COVER_EXIT_MS, type IntroDetails } from './RaceIntro'
 import './styles/app.css'
 
@@ -1548,6 +1549,12 @@ export function App() {
 
         case 'keyhints':
           setKeyHints(data || {})
+          break
+
+        // Custom checkpoint chimes (spz-races -> PlaySound export). Fire and
+        // forget: no HUD state changes, so this deliberately renders nothing.
+        case 'sound':
+          playSfx(data.name, typeof data.volume === 'number' ? data.volume : 1)
           break
 
         case 'standingsToggle':
