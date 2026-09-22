@@ -3,7 +3,7 @@ game 'gta5'
 
 description 'SPiceZ Race UI (Countdown & Overlay)'
 author 'SPiceZ'
-version '1.8.1'
+version '1.8.2'
 
 ui_page 'ui/dist/index.html'
 
