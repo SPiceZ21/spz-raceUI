@@ -199,6 +199,7 @@ interface OverlayState {
   mySource?: number
   lapNum?: number
   totalLaps?: any
+  raceType?: string   // 'circuit' | 'sprint'
   checkpoint?: number
   totalCheckpoints?: number
   bestLapTime?: any
@@ -469,6 +470,10 @@ const Telemetry = ({ data, split }: {
   // Total race time only matters for multi-lap races (lap races, not sprints/TT)
   const totalLapsNum = Number(data.totalLaps) || 1
   const isLapRace = totalLapsNum > 1 && !data.isTT
+  // Laps only mean something on a circuit. A sprint is point to point, so
+  // "LAP 1/1" was noise — it says SPRINT instead. Without a race type (older
+  // server) fall back to the lap count. Time trial keeps its own lap counter.
+  const isSprint = !data.isTT && (data.raceType ? data.raceType !== 'circuit' : totalLapsNum <= 1)
   const displayTotal = formatTime(data.totalRaceTime || 0)
 
   const displayBest = data.bestLapTime && data.bestLapTime > 0
@@ -481,12 +486,19 @@ const Telemetry = ({ data, split }: {
     <div class="telemetry-hud">
       {/* Lap is the single most glanceable fact in a race — it leads. */}
       <div class="tele-head">
-        <div class="lap-box">
-          <HudIcon icon={Flag} size={11} class="ico-lap" />
-          <span class="lap-label">LAP</span>
-          <span class="lap-now">{data.lapNum || 1}</span>
-          <span class="lap-of">/{data.totalLaps || 1}</span>
-        </div>
+        {isSprint ? (
+          <div class="lap-box is-sprint">
+            <HudIcon icon={Flag} size={11} class="ico-lap" />
+            <span class="lap-now">SPRINT</span>
+          </div>
+        ) : (
+          <div class="lap-box">
+            <HudIcon icon={Flag} size={11} class="ico-lap" />
+            <span class="lap-label">LAP</span>
+            <span class="lap-now">{data.lapNum || 1}</span>
+            <span class="lap-of">/{data.totalLaps || 1}</span>
+          </div>
+        )}
         <div class="pos-chip">
           <HudIcon icon={Trophy} size={11} class="ico-pos" />
           <span class="chip-label">POS</span>
@@ -774,6 +786,34 @@ const WarmupPanel = ({ wu }: { wu: WarmupState }) => {
   )
 }
 
+/* ── Finish window ─────────────────────────────────────────────
+   The leader is home; everyone else has this long to cross the line or DNF.
+   Counts down from the moment it arrived (seconds, not a server timestamp —
+   the clocks differ). Goes red for the last 30 s. */
+const FinishWindow = ({ endsAt, total }: { endsAt: number | null; total: number }) => {
+  const [, tick] = useState(0)
+  useEffect(() => {
+    if (!endsAt) return
+    const id = setInterval(() => tick(t => t + 1), 250)
+    return () => clearInterval(id)
+  }, [endsAt])
+  if (!endsAt) return null
+
+  const left = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000))
+  const pct = total > 0 ? (left / total) * 100 : 0
+  const urgent = left <= 30
+  return (
+    <div class={`finish-window ${urgent ? 'urgent' : ''}`}>
+      <div class="fw-row">
+        <HudIcon icon={Flag} size={13} class="fw-ico" />
+        <span class="fw-label">Finish or DNF</span>
+        <span class="fw-time">{Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}</span>
+      </div>
+      <div class="fw-bar"><div class="fw-bar-fill" style={{ width: `${pct}%` }} /></div>
+    </div>
+  )
+}
+
 /* ── Lobby pill (bottom-center: join / queued / next race) ─── */
 
 interface LobbyState {
@@ -917,7 +957,9 @@ function Countdown({ data }: { data: any }) {
           <div class="cd-meta">
             {data.track && <span class="cd-track">{data.track}</span>}
             {data.class && <span class="cd-chip cd-class">CLASS {data.class}</span>}
-            {data.laps && <span class="cd-chip">{data.laps} LAP{Number(data.laps) === 1 ? '' : 'S'}</span>}
+            {data.raceType && data.raceType !== 'circuit'
+              ? <span class="cd-chip">SPRINT</span>
+              : data.laps && <span class="cd-chip">{data.laps} LAP{Number(data.laps) === 1 ? '' : 'S'}</span>}
           </div>
         )}
 
@@ -976,6 +1018,7 @@ export function App() {
   const [cpDist, setCpDist] = useState(0)
   const [cpWp, setCpWp] = useState<CPWaypoint>({ dist: 0 })
   const [warmup, setWarmup] = useState<WarmupState>({ remaining: 0, total: 0 })
+  const [finishWin, setFinishWin] = useState<{ endsAt: number | null; total: number }>({ endsAt: null, total: 0 })
   const [lobby, setLobby] = useState<LobbyState>({ mode: 'hidden' })
   const [wanted, setWanted] = useState<WantedState>({ stars: 0, max: 5 })
   const [sectors, setSectors] = useState<(SectorEntry | null)[]>([null, null, null])
@@ -1217,6 +1260,12 @@ export function App() {
         }
         if ((D as any).warmup) setWarmup((D as any).warmup)
         if ((D as any).lobby) setLobby((D as any).lobby)
+        // ?finish=SECONDS shows the finish-window countdown (under 30 = urgent).
+        const finishQ = Number(qs.get('finish'))
+        if (finishQ > 0) {
+          setWarmup({ remaining: 0, total: 0 })   // same slot; never both live
+          setFinishWin({ endsAt: Date.now() + finishQ * 1000, total: Math.max(finishQ, 120) })
+        }
         // ?wanted=0..5 with optional ?escape=seconds, so the star row and the
         // losing-them state can be judged without a pursuit running.
         const wantedQ = qs.get('wanted')
@@ -1272,9 +1321,10 @@ export function App() {
           clearIntro()
           setCountdown(data)
           setShowCountdown(true)
-          if (data.laps || data.totalCheckpoints) {
+          if (data.laps || data.raceType || data.totalCheckpoints) {
             merge({
               totalLaps: data.laps || overlayRef.current.totalLaps,
+              raceType: data.raceType || overlayRef.current.raceType,
               totalCheckpoints: data.totalCheckpoints ? Number(data.totalCheckpoints) : overlayRef.current.totalCheckpoints,
               myPosition: data.gridPos || overlayRef.current.myPosition || '1',
             })
@@ -1307,6 +1357,7 @@ export function App() {
             positions: data.positions || overlayRef.current.positions,
             mySource: data.mySource || overlayRef.current.mySource,
             totalLaps: data.totalLaps || overlayRef.current.totalLaps,
+            raceType: data.raceType || overlayRef.current.raceType,
             lapNum: data.lapNum || overlayRef.current.lapNum,
             checkpoint: data.checkpoint || overlayRef.current.checkpoint,
           }
@@ -1437,6 +1488,16 @@ export function App() {
 
         case 'warmupEnd':
           setWarmup({ remaining: 0, total: 0 })
+          break
+
+        case 'finishWindow': {
+          const secs = Number(data.seconds) || 0
+          setFinishWin(secs > 0 ? { endsAt: Date.now() + secs * 1000, total: secs } : { endsAt: null, total: 0 })
+          break
+        }
+
+        case 'finishWindowEnd':
+          setFinishWin({ endsAt: null, total: 0 })
           break
 
         /*
@@ -1576,6 +1637,7 @@ export function App() {
           setShowCountdown(false)
           setShowStats(false)
           setWarmup({ remaining: 0, total: 0 })
+          setFinishWin({ endsAt: null, total: 0 })
           rewindCreditRef.current = 0
           break
       }
@@ -1621,6 +1683,7 @@ export function App() {
       {fastest && <FastestLap f={fastest} />}
 
       <WarmupPanel wu={warmup} />
+      <FinishWindow endsAt={finishWin.endsAt} total={finishWin.total} />
       <LobbyPill lb={lobby} />
 
       {showStats && postRace && (

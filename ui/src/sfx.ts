@@ -9,8 +9,8 @@
 // Paths are relative (vite `base: './'`): the page is served from the resource
 // root, and an absolute '/aud/...' would not resolve inside the NUI frame.
 const CLIPS: Record<string, string> = {
-  cppass: './aud/cppass.mp3',
-  cpmiss: './aud/cpmiss.wav',
+  cppass: './aud/cppass.wav',
+  cpmiss: './aud/cpmiss.mp3',
 }
 
 // Decoding on first play would delay the chime past the gate it belongs to,

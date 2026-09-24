@@ -16,6 +16,7 @@ local isRaceOverlayVisible = false
 local hudCache = {
     lapNum = 1,
     totalLaps = '?',
+    raceType = nil,   -- 'circuit' | 'sprint', from the countdown
     checkpoint = 1,
     totalCheckpoints = '?',
     myPosition = '1',
@@ -26,6 +27,7 @@ local hudCache = {
 ---@param data table { number: number, isGo: boolean, track: string, class: string, laps: number, gridPos: number, total: number }
 local function ShowCountdown(data)
     if data.laps then hudCache.totalLaps = data.laps end
+    if data.raceType then hudCache.raceType = data.raceType end
     if data.totalCheckpoints then hudCache.totalCheckpoints = data.totalCheckpoints end
     if data.total then hudCache.myPosition = data.gridPos or hudCache.myPosition end
 
@@ -97,6 +99,7 @@ local function UpdateRaceOverlay(data)
             mySource = data.mySource or GetPlayerServerId(PlayerId()),
             lapNum = hudCache.lapNum,
             totalLaps = hudCache.totalLaps,
+            raceType = hudCache.raceType,
             checkpoint = hudCache.checkpoint,
             totalCheckpoints = hudCache.totalCheckpoints,
             bestLapTime = hudCache.bestLapTime,
@@ -375,6 +378,17 @@ local function PlaySound(name, volume)
     SendNUIMessage({ action = 'sound', data = { name = name, volume = volume } })
 end
 exports('PlaySound', PlaySound)
+
+-- Finish window countdown ("cross the line or DNF"). The NUI counts down itself
+-- from `seconds`; this only starts and stops it.
+local function ShowFinishWindow(seconds)
+    SendNUIMessage({ action = 'finishWindow', data = { seconds = tonumber(seconds) or 0 } })
+end
+local function HideFinishWindow()
+    SendNUIMessage({ action = 'finishWindowEnd', data = {} })
+end
+exports('ShowFinishWindow', ShowFinishWindow)
+exports('HideFinishWindow', HideFinishWindow)
 
 -- Fastest lap banner — data = { name, ms, mine }
 local function ShowFastestLap(data)

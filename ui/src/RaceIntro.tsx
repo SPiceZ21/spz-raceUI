@@ -167,7 +167,9 @@ function Stat({ label, value, i }: { label: string, value: string, i: number }) 
 }
 
 function CircuitSlide({ d }: { d: IntroDetails }) {
-  const laps = d.laps && d.laps > 0 ? String(d.laps) : null
+  // Laps only on a circuit — a sprint's "1 lap" is not a fact worth a stat.
+  const isCircuit = !d.type || d.type.toLowerCase() === 'circuit'
+  const laps = isCircuit && d.laps && d.laps > 0 ? String(d.laps) : null
   return (
     <>
       <Kicker n="01">Circuit</Kicker>

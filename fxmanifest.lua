@@ -30,7 +30,9 @@ exports {
     'SetRaceOverlayVisible',
     'HideAll',
     'ShowPostRaceStats',
-    'PlaySound'
+    'PlaySound',
+    'ShowFinishWindow',
+    'HideFinishWindow',
 }
 
 dependencies {

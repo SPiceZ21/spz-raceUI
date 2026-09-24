@@ -597,6 +597,10 @@ body {
   font-variant-numeric: tabular-nums;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
 }
+.lap-box.is-sprint .lap-now {
+  font-size: 15px;
+  letter-spacing: 0.08em;
+}
 .lap-box .lap-of {
   font-family: var(--font-display);
   font-size: 12px;
@@ -1575,6 +1579,55 @@ body {
    screen. Kept as real px rather than a transform so the type stays crisp.
    Deliberately short of a full 1.5x: at that size the panel ran into the
    standings tower on the left and the lap clock on the right. */
+/* Finish window — top centre, where the warm-up panel sits (never both). */
+.finish-window {
+  position: fixed;
+  top: 26px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 230px;
+  padding: 9px 16px 10px;
+  background: rgba(6, 7, 9, 0.85);
+  border: 1px solid rgba(var(--color-primary-rgb), 0.4);
+  border-radius: 6px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  z-index: 31;
+}
+.fw-row { display: flex; align-items: center; gap: 8px; }
+.fw-ico { color: var(--color-primary); }
+.fw-label {
+  flex: 1;
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+}
+.fw-time {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 900;
+  font-style: italic;
+  line-height: 1;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+.fw-bar { height: 3px; background: rgba(255, 255, 255, 0.08); border-radius: 2px; overflow: hidden; }
+.fw-bar-fill { height: 100%; background: var(--color-primary); transition: width 0.25s linear; }
+.finish-window.urgent { border-color: rgba(232, 64, 64, 0.7); animation: fw-pulse 1s ease-in-out infinite; }
+.finish-window.urgent .fw-time,
+.finish-window.urgent .fw-ico { color: #ff4b4b; }
+.finish-window.urgent .fw-bar-fill { background: #ff4b4b; }
+@keyframes fw-pulse {
+  0%, 100% { box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4); }
+  50%      { box-shadow: 0 0 18px rgba(255, 75, 75, 0.45); }
+}
+
 .warmup-panel {
   position: fixed;
   top: 26px;
