@@ -11,6 +11,11 @@
 const CLIPS: Record<string, string> = {
   cppass: './aud/cppass.wav',
   cpmiss: './aud/cpmiss.mp3',
+  // Grid start. `countdown` is the per-second beep (one per tick of the
+  // 5-4-3-2-1), `go` is the release. Both replace game audio that was never
+  // there — the countdown used to be silent.
+  countdown: './aud/countdown.mp3',
+  go: './aud/go.mp3',
 }
 
 // Decoding on first play would delay the chime past the gate it belongs to,
