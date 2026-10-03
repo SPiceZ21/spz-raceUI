@@ -1,3 +1,4 @@
+import { ProximityRadar, type RadarState } from './components/ProximityRadar'
 import { useState, useEffect, useRef } from 'preact/hooks'
 import {
   Flag, Trophy, MapPin, Timer, Gauge, Crown, WifiOff,
@@ -1025,6 +1026,7 @@ export function App() {
   const [split, setSplit] = useState<{ delta: number | null; split?: number; cp: number; total: number; key: number } | null>(null)
   const [showStandings, setShowStandings] = useState(true)
   const [keyHints, setKeyHints] = useState<KeyHints>({})
+  const [radar, setRadar] = useState<RadarState>({ cars: [], w: 2, l: 4.5 })
   const [fastest, setFastest] = useState<{ name: string; ms: number; mine: boolean; key: number } | null>(null)
 
   // ── Race intro (cover → sweep → details card) ─────────────────────────────
@@ -1626,8 +1628,13 @@ export function App() {
           dismissStats()
           break
 
+        case 'radar':
+          setRadar({ cars: data.cars || [], w: data.w || 2, l: data.l || 4.5 })
+          break
+
         case 'tt_hide':
         case 'hideAll':
+          setRadar({ cars: [], w: 2, l: 4.5 })
           clearIntro()
           stopRaceTimer()
           if (autoCloseRef.current) clearInterval(autoCloseRef.current)
@@ -1676,6 +1683,8 @@ export function App() {
 
       {/* Outside the overlay gate: a pursuit is worth seeing with the running
           order hidden, and it ends on its own when the stars do. */}
+      {showOverlay && <ProximityRadar r={radar} />}
+
       <WantedStars w={wanted} />
 
       {/* Outside the overlay layer: a fastest lap is worth seeing even with

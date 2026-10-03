@@ -420,3 +420,50 @@ RegisterNUICallback("tt_restartBtn", function(_, cb)
     TriggerEvent("SPZ:tt:nuiRestartBtn")
     cb("ok")
 end)
+
+-- ── Proximity radar (ACC-style) ─────────────────────────────────────────────
+-- While the race overlay is up, other players' cars within RADAR_RANGE are sent
+-- to the NUI in MY car's frame (x = metres right, y = metres ahead, h = their
+-- heading relative to mine). The NUI draws them round my car and lights the
+-- side a car is overlapping on. 20 Hz while someone is close, 4 Hz scanning
+-- otherwise, and one empty message when the last car leaves (no spam).
+local RADAR_RANGE = 9.5   -- matches the NUI field of view (±5 m wide, ±8 m long)
+
+local function dims(veh)
+    local mn, mx = GetModelDimensions(GetEntityModel(veh))
+    return mx.x - mn.x, mx.y - mn.y
+end
+
+CreateThread(function()
+    local wasEmpty = true
+    while true do
+        local sleep = 250
+        local ped = PlayerPedId()
+        local me = GetVehiclePedIsIn(ped, false)
+        local cars = {}
+        if isRaceOverlayVisible and me ~= 0 then
+            local myPos, myHead = GetEntityCoords(me), GetEntityHeading(me)
+            for _, pid in ipairs(GetActivePlayers()) do
+                if pid ~= PlayerId() then
+                    local veh = GetVehiclePedIsIn(GetPlayerPed(pid), false)
+                    if veh ~= 0 and veh ~= me and #(GetEntityCoords(veh) - myPos) < RADAR_RANGE then
+                        local o = GetOffsetFromEntityGivenWorldCoords(me, GetEntityCoords(veh))
+                        local w, l = dims(veh)
+                        cars[#cars + 1] = {
+                            x = math.floor(o.x * 100) / 100, y = math.floor(o.y * 100) / 100,
+                            h = math.floor(GetEntityHeading(veh) - myHead), w = w, l = l,
+                        }
+                    end
+                end
+            end
+            if #cars > 0 then sleep = 50 end
+        end
+        if #cars > 0 or not wasEmpty then
+            local myW, myL = 2.0, 4.5
+            if me ~= 0 then myW, myL = dims(me) end
+            SendNUIMessage({ action = 'radar', data = { cars = cars, w = myW, l = myL } })
+            wasEmpty = #cars == 0
+        end
+        Wait(sleep)
+    end
+end)
