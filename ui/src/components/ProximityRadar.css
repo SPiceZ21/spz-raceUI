@@ -1,73 +1,50 @@
-/* Proximity radar — same glass as the rest of the HUD (see .cd / standings in
-   app.css). Sizes are px: the HUD root already applies --hud-scale via zoom. */
+/* Proximity radar — a floating hexagon with faded edges, no panel behind it.
+   Sizes are px: the HUD root already applies --hud-scale via zoom. */
 .prox {
-  --prox-warn: var(--color-primary);
+  --prox-warn: #ffd21e;
   position: absolute;
   left: 50%;
   top: 34%;
-  width: 92px;
-  padding: 6px 6px 4px;
+  width: 150px;
   transform: translate(-50%, -50%) scale(0.92);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--radius-lg);
-  background: linear-gradient(180deg, rgba(10, 10, 14, 0.9), rgba(6, 6, 9, 0.78));
-  overflow: hidden;
   opacity: 0;
-  transition: opacity var(--anim-normal) var(--anim-ease), transform var(--anim-normal) var(--anim-ease),
-              border-color var(--anim-fast) linear;
+  transition: opacity var(--anim-normal) var(--anim-ease), transform var(--anim-normal) var(--anim-ease);
   pointer-events: none;
 }
-/* Accent strip across the top, like the HUD's other panels. */
-.prox::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, var(--prox-warn), transparent);
-}
-/* Faint orange wash behind the field so the panel reads as coloured, not grey. */
-.prox::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(70% 55% at 50% 45%, rgba(var(--color-primary-rgb), 0.14), transparent 75%);
-  pointer-events: none;
-}
-.prox.danger::after { background: radial-gradient(70% 55% at 50% 45%, rgba(255, 59, 48, 0.2), transparent 75%); }
-.prox > * { position: relative; z-index: 1; }
-
 .prox.on { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-.prox.danger { --prox-warn: #ff3b30; border-color: rgba(255, 59, 48, 0.55); }
+.prox.danger { --prox-warn: #ff3b30; }
 
-.prox svg { display: block; width: 100%; height: auto; aspect-ratio: 5 / 8; overflow: hidden; }
+.prox svg { display: block; width: 100%; height: auto; overflow: visible; }
 
 .prox .guide {
   fill: none;
-  stroke: rgba(255, 255, 255, 0.16);
-  stroke-width: 0.06;
-  stroke-dasharray: 0.35 0.3;
+  stroke: rgba(255, 255, 255, 0.8);
+  stroke-width: 0.1;
+  stroke-dasharray: 0.4 0.32;
 }
+.prox .guide.faint { stroke: rgba(255, 255, 255, 0.45); }
 .prox .warn { transition: opacity 120ms linear; }
 
 .prox .car .body { stroke-width: 0.1; }
-.prox .car .glass { fill: rgba(0, 0, 0, 0.35); }
-.prox .car.other .body { fill: rgba(255, 255, 255, 0.94); stroke: rgba(0, 0, 0, 0.5); }
+.prox .car.other .body { fill: rgba(255, 255, 255, 0.96); stroke: rgba(0, 0, 0, 0.45); }
 .prox .car.me .body {
-  fill: var(--color-primary);
+  fill: #22c55e;
   stroke: rgba(255, 255, 255, 0.85);
-  filter: drop-shadow(0 0 0.35px rgba(var(--color-primary-rgb), 0.9));
+  filter: drop-shadow(0 0 0.4px rgba(34, 197, 94, 0.9));
 }
-.prox.danger .car.me .body { fill: #ff3b30; filter: drop-shadow(0 0 0.35px rgba(255, 59, 48, 0.9)); }
+.prox.danger .car.me .body { fill: #ff3b30; filter: drop-shadow(0 0 0.4px rgba(255, 59, 48, 0.9)); }
 
 .prox-gap {
-  margin-top: 2px;
+  margin-top: -2px;
+  min-height: 14px;
   font-family: var(--font-primary);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-align: center;
   color: #fff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
   font-variant-numeric: tabular-nums;
 }
-.prox-gap span { margin-left: 2px; font-size: 8px; color: rgba(255, 255, 255, 0.5); }
+.prox-gap span { margin-left: 2px; font-size: 8px; color: rgba(255, 255, 255, 0.6); }
 .prox.danger .prox-gap { color: #ff6b62; }

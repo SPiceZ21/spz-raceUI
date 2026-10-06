@@ -1242,6 +1242,10 @@ export function App() {
         // race (default) — the HUD as it looks mid-lap
         setOverlay(D.overlay)
         setShowOverlay(true)
+        // ?radar=1 seeds the proximity radar: one car alongside on the right, one behind-left.
+        if (qs.get('radar')) {
+          setRadar({ cars: [{ x: 2.6, y: 0.8, h: 4, w: 2, l: 4.6 }, { x: -1.6, y: -6.2, h: -3, w: 2, l: 4.4 }], w: 2, l: 4.5 })
+        }
         // Key hints normally arrive from Lua on join; seed them so the preview
         // shows the bar. ?keys=none drops it to judge the HUD without.
         // ?list=hidden renders the HUD as it looks with the standings list

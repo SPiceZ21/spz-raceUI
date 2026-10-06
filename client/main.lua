@@ -427,7 +427,7 @@ end)
 -- heading relative to mine). The NUI draws them round my car and lights the
 -- side a car is overlapping on. 20 Hz while someone is close, 4 Hz scanning
 -- otherwise, and one empty message when the last car leaves (no spam).
-local RADAR_RANGE = 9.5   -- matches the NUI field of view (±5 m wide, ±8 m long)
+local RADAR_RANGE = 9.5   -- matches the NUI hexagon (9 m centre-to-corner)
 
 local function dims(veh)
     local mn, mx = GetModelDimensions(GetEntityModel(veh))
