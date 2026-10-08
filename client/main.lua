@@ -150,22 +150,31 @@ local function ShowPostRaceStats(data)
         data = data
     })
 
+    -- [Enter] full results: the leaderboard opened on this race
+    -- (spz-leaderboard). Only offered when the leaderboard is running.
+    local canOpenBoard = GetResourceState("spz-leaderboard") == "started"
+
     CreateThread(function()
         while _statsActive do
+            if canOpenBoard then
+                BeginTextCommandDisplayHelp("STRING")
+                AddTextComponentSubstringPlayerName("~INPUT_FRONTEND_ACCEPT~ Full results   ~INPUT_FRONTEND_DELETE~ Close")
+                EndTextCommandDisplayHelp(0, false, false, -1)
+            end
             -- 177 = INPUT_FRONTEND_DELETE (Backspace)
             if IsControlJustPressed(0, 177) then
                 HidePostRaceStats()
                 break
             end
+            -- 201 = INPUT_FRONTEND_ACCEPT (Enter)
+            if canOpenBoard and IsControlJustPressed(0, 201) then
+                HidePostRaceStats()
+                pcall(function() exports["spz-leaderboard"]:OpenLastRaceResults() end)
+                break
+            end
             Wait(0)
         end
     end)
-end
-
--- Time Trial Exports
--- (track-selection menu moved to ox_lib in spz-races/client/timetrail.lua)
-local function TT_UpdateHUD(data)
-    SendNUIMessage({ action = 'tt_hud_show', data = data })
 end
 
 local function TT_Hide()
@@ -175,13 +184,6 @@ end
 
 local function TT_Broadcast(action, data)
     SendNUIMessage({ action = action, data = data })
-end
-
--- Dedicated distance update — targeted NUI message so the distance pill
--- re-renders without touching Standings / Telemetry state (no full HUD diff).
-local function UpdateCPDistance(distM)
-    if not isRaceOverlayVisible then return end
-    SendNUIMessage({ action = 'cpDistUpdate', data = { dist = distM or 0 } })
 end
 
 -- 3D-billboard waypoint for the next CP: screen-projected position + distance.
@@ -351,7 +353,6 @@ end)
 exports('SetKeyHints', SetKeyHints)
 exports('ShowCountdown', ShowCountdown)
 exports('UpdateRaceOverlay', UpdateRaceOverlay)
-exports('UpdateCPDistance', UpdateCPDistance)
 exports('UpdateCPWaypoint', UpdateCPWaypoint)
 exports('UpdateSector', UpdateSector)
 exports('ResetSectors', ResetSectors)
@@ -366,7 +367,6 @@ exports('HideRewind', HideRewind)
 exports('SetRaceOverlayVisible', SetRaceOverlayVisible)
 exports('HideAll', HideAll)
 exports('ShowPostRaceStats', ShowPostRaceStats)
-exports('TT_UpdateHUD', TT_UpdateHUD)
 exports('TT_Hide', TT_Hide)
 exports('TT_Broadcast', TT_Broadcast)
 
@@ -403,21 +403,11 @@ end
 exports('ShowSplitDelta', ShowSplitDelta)
 
 -- Event Listeners for Race Bridge
-RegisterNetEvent("spz_race:state_updated", function(state)
-    if state == "IDLE" or state == "CLEANUP" then
-        HideAll()
-    end
-end)
 
 RegisterNUICallback("tt_dismissResults", function(_, cb)
     _statsActive = false           -- stop the backspace poll if it's still running
     SetNuiFocus(false, false)
     TriggerEvent("SPZ:tt:nuiDismissResults")
-    cb("ok")
-end)
-
-RegisterNUICallback("tt_restartBtn", function(_, cb)
-    TriggerEvent("SPZ:tt:nuiRestartBtn")
     cb("ok")
 end)
 

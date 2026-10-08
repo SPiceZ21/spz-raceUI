@@ -60,9 +60,9 @@ fit. Anything added to a row has to be paid for somewhere; measure
 | Countdown / lobby | `ShowCountdown` · `ShowWarmup` · `HideWarmup` · `UpdateLobby` |
 | Key hints | `SetKeyHints` |
 | Overlay | `UpdateRaceOverlay` · `SetRaceOverlayVisible` · `HideAll` |
-| Checkpoints | `UpdateCPDistance` · `UpdateCPWaypoint` |
+| Checkpoints | `UpdateCPWaypoint` |
 | Sectors / splits | `UpdateSector` · `ResetSectors` · `ShowSplitDelta` |
-| Time trial | `TT_UpdateHUD` · `TT_Broadcast` · `TT_Hide` |
+| Time trial | `TT_Broadcast` · `TT_Hide` |
 | Results | `ShowPostRaceStats` |
 
 ```lua

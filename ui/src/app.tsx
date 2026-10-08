@@ -865,6 +865,8 @@ const PostRace = ({ data, autoClose }: { data: any, autoClose: number, onDismiss
   const srDelta = data.safetyRatingDelta || 0
   const podiumClass = typeof pos === 'number' && pos <= 3 ? `podium-${pos}` : 'podium-other'
   const srStr = srDelta.toFixed ? srDelta.toFixed(2) : srDelta
+  const rpDelta = Number(data.rpDelta) || 0
+  const rated = data.rated !== false
 
   return (
     <div class="results-toast">
@@ -889,6 +891,16 @@ const PostRace = ({ data, autoClose }: { data: any, autoClose: number, onDismiss
         <span class="rt-val">{data.bestLap || '--'}</span>
       </div>
 
+      {/* rank (ranking v3): rank points moved this race. Unrated = solo race. */}
+      {data.rank && (
+        <div class="rt-metric rt-box">
+          <span class="rt-label">Rank {data.rank}</span>
+          {rated
+            ? <span class={`rt-delta ${rpDelta >= 0 ? 'pos' : 'neg'}`}>{rpDelta >= 0 ? '+' : ''}{rpDelta} RP</span>
+            : <span class="rt-incidents">UNRATED</span>}
+        </div>
+      )}
+
       {/* deltas */}
       <div class="rt-metric rt-box">
         <span class="rt-label">iRating</span>
@@ -908,6 +920,7 @@ const PostRace = ({ data, autoClose }: { data: any, autoClose: number, onDismiss
       </div>
 
       {data.levelUp && <div class="rt-levelup">LEVEL UP</div>}
+      {data.rankUp && <div class="rt-levelup">RANK UP · {data.rank}</div>}
 
       {/* dismiss */}
       <div class="rt-tail rt-box">
