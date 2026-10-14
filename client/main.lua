@@ -1,12 +1,25 @@
 -- Base theme (server.cfg spz_theme_* convars via spz-core).
+-- A message sent before the page has loaded is dropped, and the theme can
+-- arrive before or after that — so remember the last one and re-send it when
+-- the page reports ready (uiReady below).
+local lastTheme = nil
 local function pushRaceUITheme(theme)
     if theme and next(theme) then
+        lastTheme = theme
         SendNUIMessage({ action = 'theme', theme = theme })
     end
 end
-CreateThread(function()
+local function pullTheme()
     local ok, theme = pcall(function() return exports['spz-core']:GetTheme() end)
-    if ok then pushRaceUITheme(theme) end
+    if ok and theme and next(theme) then pushRaceUITheme(theme) end
+    return lastTheme ~= nil
+end
+CreateThread(function()
+    -- spz-core may not have the theme yet right after a restart: keep asking.
+    for _ = 1, 30 do
+        if pullTheme() then return end
+        Wait(1000)
+    end
 end)
 AddEventHandler('SPZ:themeUpdated', function(theme) pushRaceUITheme(theme) end)
 
@@ -347,6 +360,8 @@ end
 RegisterNUICallback('uiReady', function(data, cb)
     print(("^2[spz-raceUI] UI build %s loaded^7"):format(tostring(data and data.build)))
     cb('ok')
+    -- The page just (re)loaded with default colours: give it the theme now.
+    if not pullTheme() and lastTheme then SendNUIMessage({ action = 'theme', theme = lastTheme }) end
 end)
 
 -- Exports
