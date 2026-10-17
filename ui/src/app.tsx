@@ -89,6 +89,37 @@ const KeyCap = ({ children }: { children: any }) => (
   <span class="keycap">{children}</span>
 )
 
+/* KeyGlyph — a key label drawn as an accent-gradient keycap, or, for a
+   controller button, as the button itself: coloured A/B/X/Y, bumper and
+   trigger shapes, stick rings, a d-pad with the pressed arm lit. Same look as
+   spz-minigames/ui/keyglyph.js (keep in step). */
+const FACE: Record<string, string> = { A: 'kg-a', B: 'kg-b', X: 'kg-x', Y: 'kg-y' }
+const DPAD_DIR: Record<string, string> = { '↑': 'up', '↓': 'down', '←': 'left', '→': 'right' }
+const KeyGlyph = ({ label }: { label?: string }) => {
+  const k = String(label || '?').trim()
+  const u = k.toUpperCase()
+  if (FACE[u]) return <span class={`kg kg-face ${FACE[u]}`}>{u}</span>
+  if (u === 'LB' || u === 'RB') return <span class="kg kg-bumper">{u}</span>
+  if (u === 'LT' || u === 'RT') return <span class="kg kg-trigger">{u}</span>
+  if (u === 'LS' || u === 'RS') return <span class="kg kg-stick">{u[0]}</span>
+  if (u === 'MENU') return <span class="kg kg-round">☰</span>
+  if (u === 'VIEW') return <span class="kg kg-round">⧉</span>
+  if (u.startsWith('D-PAD')) {
+    const dir = DPAD_DIR[k.slice(-1)] || ''
+    const arm = (d: string, path: string) => <path class={d === dir ? 'on' : ''} d={path} />
+    return (
+      <span class="kg kg-dpad">
+        <svg viewBox="0 0 24 24">
+          {arm('up', 'M9 2h6v7H9z')}{arm('down', 'M9 15h6v7H9z')}
+          {arm('left', 'M2 9h7v6H2z')}{arm('right', 'M15 9h7v6h-7z')}
+          <rect class="mid" x="9" y="9" width="6" height="6" />
+        </svg>
+      </span>
+    )
+  }
+  return <span class="kg kg-key">{k}</span>
+}
+
 function posSuffix(p: number) {
   if (p === 1) return 'ST'
   if (p === 2) return 'ND'
@@ -250,7 +281,7 @@ const KeyHintBar = ({ hints, listHidden }: { hints: KeyHints, listHidden: boolea
     <div class="key-hints">
       {shown.map(([id, k, label]) => (
         <span key={id} class={'key-hint' + (hints.suggest === id ? ' suggest' : '')}>
-          <KeyCap>{k}</KeyCap>
+          <KeyGlyph label={k} />
           <span class="key-hint-label">{label}</span>
         </span>
       ))}
