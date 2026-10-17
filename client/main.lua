@@ -277,44 +277,78 @@ end
 
 -- ── Key hints ────────────────────────────────────────────────────────────────
 -- The HUD prints the in-race keys so a driver never has to leave the race to
--- find out how to recover. Two of the three keys are owned by spz-races
--- (client/recover.lua) and pushed in through SetKeyHints; the standings toggle
--- is ours, so it is declared here and merged.
+-- find out how to recover. Each hint is backed by its COMMAND, and the key shown
+-- is the player's LIVE binding (spz-core KeyFor), re-read every second — so a
+-- rebind in Settings → Key Bindings → FiveM shows up on the HUD.
 --
--- These are the DEFAULT bindings. A player who rebinds in Settings gets the new
--- key, but the hint still shows the default — FiveM exposes no way to read back
--- a live command binding.
--- NOT Z: ox_lib's radial menu is bound to Z, and the radial is the in-car
--- surface for the raceline/ghost controls — pressing it opened both.
+-- Other resources add their keys with SetKeyHints:
+--   SetKeyHints({ flip = { cmd = "spz_flip_car", default = "K" } })
+-- A plain string still works (shown as-is, never re-read).
+-- NOT Z for standings: ox_lib's radial menu is bound to Z.
 -- Registry: Docs/keybinds.md
 local KEY_STANDINGS = "N"
 
-local KeyHints = { standings = KEY_STANDINGS }
+local HintSrc = { standings = { cmd = "standingstoggle", default = KEY_STANDINGS, pad = "LDOWN_INDEX" } }
+local lastSent = nil
 
-local function PushKeyHints()
-    SendNUIMessage({ action = 'keyhints', data = KeyHints })
+local function liveKey(src)
+    if type(src) == "string" then return src end
+    local ok, k = pcall(function() return exports["spz-core"]:KeyFor(src.cmd, src.default, src.pad) end)
+    return (ok and k) or src.default
+end
+
+-- The hint that fits the moment, or nil.
+local stuckSince = nil
+local function suggestion()
+    local st = LocalPlayer.state
+    if not (st.inRace or st.inTimeTrial) then stuckSince = nil; return nil end
+    local veh = GetVehiclePedIsIn(PlayerPedId(), false)
+    if veh == 0 then return nil end
+    if IsEntityUpsidedown(veh) or math.abs(GetEntityRoll(veh)) > 100.0 then return "flip" end
+    if GetEntitySpeed(veh) < 1.5 and not IsEntityPositionFrozen(veh) then
+        stuckSince = stuckSince or GetGameTimer()
+        if GetGameTimer() - stuckSince > 6000 then return "respawn" end
+    else
+        stuckSince = nil
+    end
+    return nil
+end
+
+local function PushKeyHints(force)
+    local data = {}
+    for id, src in pairs(HintSrc) do
+        -- the time-trial restart only means something during a time trial
+        if id ~= "restart" or LocalPlayer.state.inTimeTrial then data[id] = liveKey(src) end
+    end
+    data.suggest = suggestion()
+    local key = json.encode(data)
+    if force or key ~= lastSent then
+        lastSent = key
+        SendNUIMessage({ action = 'keyhints', data = data })
+    end
 end
 
 local function SetKeyHints(t)
     if type(t) ~= "table" then return end
     for k, v in pairs(t) do
-        if type(v) == "string" and v ~= "" then KeyHints[k] = v end
+        if (type(v) == "string" and v ~= "") or (type(v) == "table" and v.cmd) then HintSrc[k] = v end
     end
-    PushKeyHints()
+    PushKeyHints(true)
 end
 
--- The NUI page may not be listening yet when another resource pushes its keys,
--- so re-send once the frame is definitely up.
+-- Re-read bindings + suggestion every second; only sends when something changed.
+-- The first sends also cover the NUI page not listening yet at start.
 CreateThread(function()
     Wait(2000)
-    PushKeyHints()
+    PushKeyHints(true)
+    while true do
+        Wait(1000)
+        PushKeyHints(false)
+    end
 end)
 
--- Toggle the standings list (keybind, rebindable in Settings → Key Bindings)
-RegisterCommand("standingstoggle", function()
-    SendNUIMessage({ action = 'standingsToggle', data = {} })
-end, false)
 RegisterKeyMapping("standingstoggle", "Race: Toggle Standings List", "keyboard", KEY_STANDINGS)
+RegisterKeyMapping("standingstoggle", "Race: Toggle Standings List (controller)", "PAD_DIGITALBUTTON", "LDOWN_INDEX")
 
 -- Lobby pill — data = { mode = 'hidden'|'join'|'queued'|'intermission',
 --                       queueCount, queuePos, seconds }

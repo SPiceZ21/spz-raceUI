@@ -223,24 +223,33 @@ interface OverlayState {
    They are DEFAULT bindings; a rebind in Settings is not reflected, because
    FiveM exposes no way to read a live command binding back. */
 
-interface KeyHints { respawn?: string; flip?: string; standings?: string; results?: string }
+// Keys are the player's LIVE bindings (spz-core KeyFor), re-read by
+// client/main.lua, so a rebind in Settings shows up here. `suggest` names the
+// hint that fits the moment (car upside down -> flip, stuck -> last CP); it
+// pulses in the accent colour.
+interface KeyHints {
+  respawn?: string; flip?: string; standings?: string; results?: string
+  rewind?: string; restart?: string; suggest?: string
+}
 
 const KeyHintBar = ({ hints, listHidden }: { hints: KeyHints, listHidden: boolean }) => {
-  const items: [string | undefined, string][] = [
-    [hints.standings, listHidden ? 'SHOW LIST' : 'HIDE LIST'],
-    [hints.respawn, 'LAST CP'],
-    [hints.flip, 'FLIP'],
+  const items: [string, string | undefined, string][] = [
+    ['standings', hints.standings, listHidden ? 'SHOW LIST' : 'HIDE LIST'],
+    ['respawn', hints.respawn, 'LAST CP'],
+    ['flip', hints.flip, 'FLIP'],
+    ['rewind', hints.rewind, 'REWIND'],
+    ['restart', hints.restart, 'RESTART'],
     // Pushed by spz-leaderboard, which owns this key. Last in the strip: it is
     // the only one you press AFTER the race rather than during it.
-    [hints.results, 'RESULTS'],
+    ['results', hints.results, 'RESULTS'],
   ]
-  const shown = items.filter(([k]) => !!k)
+  const shown = items.filter(([, k]) => !!k)
   if (!shown.length) return null
 
   return (
     <div class="key-hints">
-      {shown.map(([k, label]) => (
-        <span key={label} class="key-hint">
+      {shown.map(([id, k, label]) => (
+        <span key={id} class={'key-hint' + (hints.suggest === id ? ' suggest' : '')}>
           <KeyCap>{k}</KeyCap>
           <span class="key-hint-label">{label}</span>
         </span>
