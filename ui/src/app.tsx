@@ -796,6 +796,7 @@ interface WarmupState {
   track?: string
   class?: string
   gridPos?: number
+  tuneKey?: string
 }
 
 const WarmupPanel = ({ wu }: { wu: WarmupState }) => {
@@ -823,6 +824,9 @@ const WarmupPanel = ({ wu }: { wu: WarmupState }) => {
       </div>
       <div class="wu-bar"><div class="wu-bar-fill" style={{ width: `${pct}%` }} /></div>
       <div class="wu-hint">Practice the track — race starts when the timer ends</div>
+      {wu.tuneKey && (
+        <div class="wu-tune"><KeyGlyph label={wu.tuneKey} /><span>Tune your car</span></div>
+      )}
     </div>
   )
 }
@@ -1542,6 +1546,7 @@ export function App() {
             track: data.track,
             class: data.class,
             gridPos: data.gridPos,
+            tuneKey: data.tuneKey,
           })
           break
 

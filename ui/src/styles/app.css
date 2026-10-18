@@ -2173,3 +2173,10 @@ body {
 .kg-dpad svg { width: 100%; height: 100%; }
 .kg-dpad path, .kg-dpad .mid { fill: rgba(12, 13, 16, .85); stroke: rgba(255, 255, 255, .35); stroke-width: .8; }
 .kg-dpad path.on { fill: #fff; stroke: #fff; }
+
+/* Warmup: tune key hint under the panel */
+.wu-tune {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin-top: 6px; font-size: 11px; font-weight: 600; letter-spacing: .06em;
+  text-transform: uppercase; color: rgba(255, 255, 255, .85);
+}
