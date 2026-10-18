@@ -866,11 +866,13 @@ interface LobbyState {
   queueCount?: number
   queuePos?: number
   seconds?: number
+  mgKey?: string      // minigame hub key (live binding) — shows the second pill
 }
 
 const LobbyPill = ({ lb }: { lb: LobbyState }) => {
   if (!lb || lb.mode === 'hidden') return null
   return (
+    <div class="lobby-row">
     <div class={`lobby-pill ${lb.mode}`}>
       {lb.mode === 'join' && (
         <>
@@ -896,6 +898,13 @@ const LobbyPill = ({ lb }: { lb: LobbyState }) => {
           <span class="lp-sub"><span class="lp-key sm">E</span> join</span>
         </>
       )}
+    </div>
+    {lb.mgKey && (
+      <div class="lobby-pill mg">
+        <span class="lp-key">{lb.mgKey}</span>
+        <span class="lp-text">JOIN MINIGAMES</span>
+      </div>
+    )}
     </div>
   )
 }

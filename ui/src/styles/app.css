@@ -1708,11 +1708,19 @@ body {
 }
 
 /* ── Lobby pill (bottom-center) ────────────────────────────── */
-.lobby-pill {
+/* Race pill + minigames pill, side by side, bottom-centre. */
+.lobby-row {
   position: fixed;
   bottom: 3.5vh;
   left: 50%;
   transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+  z-index: 30;
+}
+.lobby-pill {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -1730,6 +1738,9 @@ body {
   zoom: 0.86676;
 }
 .lobby-pill.join { border-color: rgba(var(--color-primary-rgb), 0.35); }
+/* Minigames pill: same shape, quieter — the race is the main call to action. */
+.lobby-pill.mg .lp-key { background: rgba(255, 255, 255, 0.92); }
+.lobby-pill.mg .lp-text { color: rgba(255, 255, 255, 0.85); }
 .lp-key {
   display: inline-flex;
   align-items: center;
