@@ -1678,6 +1678,7 @@ export function App() {
             queueCount: data.queueCount,
             queuePos: data.queuePos,
             seconds: data.seconds,
+            mgKey: data.mgKey,
           })
           break
 
