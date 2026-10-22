@@ -869,6 +869,74 @@ interface LobbyState {
   mgKey?: string      // minigame hub key (live binding) — shows the second pill
 }
 
+/* ── Flourish: big centre-screen moment (TIME BONUS! +37.61 style) ──
+   Queued, one at a time; icon pops, title and value slide up, all fade out. */
+
+interface FlourishItem { id: number; icon?: string; title: string; value?: string; color?: string; ms?: number }
+
+const FL_ICON: Record<string, any> = {
+  timer: <svg viewBox="0 0 48 48"><circle cx="24" cy="26" r="16" fill="none" stroke="currentColor" stroke-width="5"/><path d="M24 26 L33 15" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><path d="M19 5h10" stroke="currentColor" stroke-width="5" stroke-linecap="round"/></svg>,
+  crown: <svg viewBox="0 0 48 48"><path d="M6 36 L9 14 L18 24 L24 10 L30 24 L39 14 L42 36 Z" fill="currentColor"/><rect x="6" y="38" width="36" height="5" rx="2" fill="currentColor"/></svg>,
+  coins: <svg viewBox="0 0 48 48"><ellipse cx="24" cy="14" rx="15" ry="6" fill="currentColor"/><path d="M9 14v8c0 3.3 6.7 6 15 6s15-2.7 15-6v-8" fill="none" stroke="currentColor" stroke-width="4"/><path d="M9 26v8c0 3.3 6.7 6 15 6s15-2.7 15-6v-8" fill="none" stroke="currentColor" stroke-width="4"/></svg>,
+  overtake: <svg viewBox="0 0 48 48"><path d="M10 38 L24 10 L38 38" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 38 L24 24 L31 38" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/></svg>,
+  down: <svg viewBox="0 0 48 48"><path d="M10 10 L24 38 L38 10" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>,
+}
+
+const Flourish = ({ item }: { item: FlourishItem | null }) => {
+  if (!item) return null
+  return (
+    <div key={item.id} class="fl" style={{ '--fl-c': item.color || '#ffffff', '--fl-ms': `${item.ms || 2600}ms` } as any}>
+      {item.icon && FL_ICON[item.icon] && <div class="fl-icon">{FL_ICON[item.icon]}</div>}
+      <div class="fl-title">{item.title}</div>
+      {item.value && <div class="fl-value">{item.value}</div>}
+    </div>
+  )
+}
+
+/* ── Freeroam HUD (top-right) ──────────────────────────────── */
+
+interface FreeroamState {
+  visible: boolean
+  license?: string
+  credits?: number
+  rank?: string
+  crew?: string
+  rating?: number
+  key?: string
+}
+
+const fmtCredits = (n: number) => '$' + Math.round(n).toLocaleString('en-US')
+
+const FreeroamHud = ({ fr }: { fr: FreeroamState }) => {
+  const [delta, setDelta] = useState<{ v: number; id: number } | null>(null)
+  const last = useRef<number | null>(null)
+  useEffect(() => {
+    if (fr.credits == null) return
+    if (last.current != null && fr.credits !== last.current) {
+      const d = { v: fr.credits - last.current, id: Date.now() }
+      setDelta(d)
+      setTimeout(() => setDelta(cur => (cur && cur.id === d.id ? null : cur)), 4000)
+    }
+    last.current = fr.credits
+  }, [fr.credits])
+  if (!fr.visible) return null
+  return (
+    <div class="fr-hud">
+      <span class="fr-class">{fr.license || 'D'}</span>
+      {fr.rank && <span class="fr-chip">{fr.rank}</span>}
+      {delta && (
+        <span key={delta.id} class={`fr-delta ${delta.v < 0 ? 'neg' : 'pos'}`}>
+          {delta.v < 0 ? '-' : '+'}{fmtCredits(Math.abs(delta.v))}
+        </span>
+      )}
+      <span class="fr-credits">{fmtCredits(fr.credits ?? 0)}</span>
+      {fr.rating != null && <span class="fr-chip dim">iR {fr.rating}</span>}
+      {fr.crew && <span class="fr-chip dim">{fr.crew}</span>}
+      {fr.key && <span class="fr-key">{fr.key}</span>}
+    </div>
+  )
+}
+
 const LobbyPill = ({ lb }: { lb: LobbyState }) => {
   if (!lb || lb.mode === 'hidden') return null
   return (
@@ -1087,6 +1155,17 @@ export function App() {
   const [warmup, setWarmup] = useState<WarmupState>({ remaining: 0, total: 0 })
   const [finishWin, setFinishWin] = useState<{ endsAt: number | null; total: number }>({ endsAt: null, total: 0 })
   const [lobby, setLobby] = useState<LobbyState>({ mode: 'hidden' })
+  const [freeroam, setFreeroam] = useState<FreeroamState>({ visible: false })
+  const [flourish, setFlourish] = useState<FlourishItem | null>(null)
+  const flQueue = useRef<FlourishItem[]>([])
+  const flBusy = useRef(false)
+  const flNext = () => {
+    const it = flQueue.current.shift()
+    if (!it) { flBusy.current = false; setFlourish(null); return }
+    flBusy.current = true
+    setFlourish(it)
+    setTimeout(flNext, (it.ms || 2600) + 150)
+  }
   const [wanted, setWanted] = useState<WantedState>({ stars: 0, max: 5 })
   const [sectors, setSectors] = useState<(SectorEntry | null)[]>([null, null, null])
   const [split, setSplit] = useState<{ delta: number | null; split?: number; cp: number; total: number; key: number } | null>(null)
@@ -1672,6 +1751,17 @@ export function App() {
           })
           break
 
+        case 'flourish':
+          if (data && data.title) {
+            if (flQueue.current.length < 4) flQueue.current.push({ ...data, id: Date.now() + Math.random() })
+            if (!flBusy.current) flNext()
+          }
+          break
+
+        case 'freeroam':
+          setFreeroam(data || { visible: false })
+          break
+
         case 'lobby':
           setLobby({
             mode: data.mode ?? 'hidden',
@@ -1766,6 +1856,8 @@ export function App() {
       <WarmupPanel wu={warmup} />
       <FinishWindow endsAt={finishWin.endsAt} total={finishWin.total} />
       <LobbyPill lb={lobby} />
+      <FreeroamHud fr={freeroam} />
+      <Flourish item={flourish} />
 
       {showStats && postRace && (
         <PostRace data={postRace} autoClose={autoClose} onDismiss={dismissStats} />

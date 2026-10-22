@@ -506,3 +506,52 @@ CreateThread(function()
         Wait(sleep)
     end
 end)
+
+-- ── Freeroam HUD (top-right): licence class, credits, rank, crew, rating ─────
+-- Read from the player's profile statebag (same fields the pause menu shows).
+-- Hidden in races, minigames, time trials and whenever a menu has focus.
+-- PAGE DOWN (rebindable) hides / shows it.
+local frHidden, frSig = false, ""
+local CLASS = { [0] = "D", [1] = "C", [2] = "B", [3] = "A", [4] = "S" }
+
+RegisterCommand("spz_freeroamhud", function() frHidden = not frHidden; frSig = "" end, false)
+RegisterKeyMapping("spz_freeroamhud", "HUD: show / hide freeroam info", "keyboard", "PAGEDOWN")
+
+CreateThread(function()
+    while true do
+        Wait(500)
+        local st = LocalPlayer.state
+        local p  = type(st.profile) == "table" and st.profile or {}
+        local show = not frHidden and not st.inRace and not st.inMinigame and not st.inTimeTrial
+            and not st.spawnMenuOpen and not IsNuiFocused() and not IsPauseMenuActive()
+            and not _G.SPZ_InTimeTrial and next(p) ~= nil
+        local data = { visible = show }
+        if show then
+            local tier = tonumber(st.licenseTier or p.license_tier)
+            data.license = st["spz:licenseClass"] or (tier and CLASS[tier]) or "D"
+            data.credits = tonumber(p.credits) or 0
+            data.rank    = st.rank or p.rank
+            data.crew    = st.crewTag or p.crew_tag
+            data.rating  = tonumber(st.iRating or p.i_rating)
+            local ok, k = pcall(function() return exports["spz-core"]:KeyFor("spz_freeroamhud", "PAGEDOWN") end)
+            data.key = ok and k or "PG DN"
+        end
+        local sig = json.encode(data)
+        if sig ~= frSig then
+            frSig = sig
+            SendNUIMessage({ action = "freeroam", data = data })
+        end
+    end
+end)
+
+
+-- ── Flourish: big centre-screen moment (icon, title, value) ──────────────────
+-- data = { title, value?, icon? (timer|crown|coins|overtake|down), color?, ms? }
+-- Other resources: exports["spz-raceUI"]:ShowFlourish(data), or
+-- TriggerEvent / TriggerClientEvent("spz-raceUI:flourish", data).
+local function ShowFlourish(data)
+    if type(data) ~= "table" or not data.title then return end
+    SendNUIMessage({ action = "flourish", data = data })
+end
+exports("ShowFlourish", ShowFlourish)
+RegisterNetEvent("spz-raceUI:flourish", ShowFlourish)

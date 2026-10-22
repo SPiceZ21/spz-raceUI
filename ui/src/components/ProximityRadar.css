@@ -4,14 +4,15 @@
   --prox-warn: #ffd21e;
   position: absolute;
   left: 50%;
-  top: 28%;
+  top: auto;
+  bottom: 14vh;   /* bottom-centre, above the lobby pill */
   width: 150px;
-  transform: translate(-50%, -50%) scale(0.92);
+  transform: translate(-50%, 0) scale(0.92);
   opacity: 0;
   transition: opacity var(--anim-normal) var(--anim-ease), transform var(--anim-normal) var(--anim-ease);
   pointer-events: none;
 }
-.prox.on { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+.prox.on { opacity: 1; transform: translate(-50%, 0) scale(1); }
 .prox.danger { --prox-warn: #ff3b30; }
 
 .prox svg { display: block; width: 100%; height: auto; overflow: visible; }
