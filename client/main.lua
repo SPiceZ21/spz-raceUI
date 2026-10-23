@@ -514,6 +514,16 @@ end)
 local frHidden, frSig = false, ""
 local CLASS = { [0] = "D", [1] = "C", [2] = "B", [3] = "A", [4] = "S" }
 
+-- GTA's own cash / bank pop-ups (top-right) never show on this server.
+CreateThread(function()
+    while true do
+        HideHudComponentThisFrame(3)    -- cash
+        HideHudComponentThisFrame(4)    -- MP cash
+        HideHudComponentThisFrame(13)   -- cash change
+        Wait(0)
+    end
+end)
+
 RegisterCommand("spz_freeroamhud", function() frHidden = not frHidden; frSig = "" end, false)
 RegisterKeyMapping("spz_freeroamhud", "HUD: show / hide freeroam info", "keyboard", "PAGEDOWN")
 
@@ -529,7 +539,7 @@ CreateThread(function()
         if show then
             local tier = tonumber(st.licenseTier or p.license_tier)
             data.license = st["spz:licenseClass"] or (tier and CLASS[tier]) or "D"
-            data.credits = tonumber(p.credits) or 0
+            data.xp      = tonumber(p.xp) or 0
             data.rank    = st.rank or p.rank
             data.crew    = st.crewTag or p.crew_tag
             data.rating  = tonumber(st.iRating or p.i_rating)

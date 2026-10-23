@@ -93,12 +93,12 @@ const KeyCap = ({ children }: { children: any }) => (
    controller button, as the button itself: coloured A/B/X/Y, bumper and
    trigger shapes, stick rings, a d-pad with the pressed arm lit. Same look as
    spz-minigames/ui/keyglyph.js (keep in step). */
-const FACE: Record<string, string> = { A: 'kg-a', B: 'kg-b', X: 'kg-x', Y: 'kg-y' }
+const FACE: Record<string, string> = { 'PAD A': 'kg-a', 'PAD B': 'kg-b', 'PAD X': 'kg-x', 'PAD Y': 'kg-y' }   // keyboard A/B/X/Y stay keycaps
 const DPAD_DIR: Record<string, string> = { '↑': 'up', '↓': 'down', '←': 'left', '→': 'right' }
 const KeyGlyph = ({ label }: { label?: string }) => {
   const k = String(label || '?').trim()
   const u = k.toUpperCase()
-  if (FACE[u]) return <span class={`kg kg-face ${FACE[u]}`}>{u}</span>
+  if (FACE[u]) return <span class={`kg kg-face ${FACE[u]}`}>{u.slice(4)}</span>
   if (u === 'LB' || u === 'RB') return <span class="kg kg-bumper">{u}</span>
   if (u === 'LT' || u === 'RT') return <span class="kg kg-trigger">{u}</span>
   if (u === 'LS' || u === 'RS') return <span class="kg kg-stick">{u[0]}</span>
@@ -898,38 +898,49 @@ const Flourish = ({ item }: { item: FlourishItem | null }) => {
 interface FreeroamState {
   visible: boolean
   license?: string
-  credits?: number
+  xp?: number
   rank?: string
   crew?: string
   rating?: number
   key?: string
 }
 
-const fmtCredits = (n: number) => '$' + Math.round(n).toLocaleString('en-US')
+// rank "A3" / "B-2" -> ranks/RANKA3.svg (same art as the pause menu / leaderboard)
+const rankArt = (rank?: string) => {
+  const m = /^([SABC])\s*-?\s*(\d)$/i.exec(String(rank || '').trim())
+  return m ? `ranks/RANK${m[1].toUpperCase()}${m[2]}.svg` : null
+}
+const fmtNum = (n: number) => Math.round(n).toLocaleString('en-US')
 
 const FreeroamHud = ({ fr }: { fr: FreeroamState }) => {
   const [delta, setDelta] = useState<{ v: number; id: number } | null>(null)
   const last = useRef<number | null>(null)
   useEffect(() => {
-    if (fr.credits == null) return
-    if (last.current != null && fr.credits !== last.current) {
-      const d = { v: fr.credits - last.current, id: Date.now() }
+    if (fr.xp == null) return
+    if (last.current != null && fr.xp !== last.current) {
+      const d = { v: fr.xp - last.current, id: Date.now() }
       setDelta(d)
       setTimeout(() => setDelta(cur => (cur && cur.id === d.id ? null : cur)), 4000)
     }
-    last.current = fr.credits
-  }, [fr.credits])
+    last.current = fr.xp
+  }, [fr.xp])
   if (!fr.visible) return null
+  const art = rankArt(fr.rank)
   return (
     <div class="fr-hud">
       <span class="fr-class">{fr.license || 'D'}</span>
-      {fr.rank && <span class="fr-chip">{fr.rank}</span>}
-      {delta && (
-        <span key={delta.id} class={`fr-delta ${delta.v < 0 ? 'neg' : 'pos'}`}>
-          {delta.v < 0 ? '-' : '+'}{fmtCredits(Math.abs(delta.v))}
+      {fr.rank && (
+        <span class="fr-rank">
+          {art && <img src={art} alt="" />}
+          <span>{fr.rank}</span>
         </span>
       )}
-      <span class="fr-credits">{fmtCredits(fr.credits ?? 0)}</span>
+      {delta && (
+        <span key={delta.id} class={`fr-delta ${delta.v < 0 ? 'neg' : 'pos'}`}>
+          {delta.v < 0 ? '-' : '+'}{fmtNum(Math.abs(delta.v))} XP
+        </span>
+      )}
+      <span class="fr-credits">{fmtNum(fr.xp ?? 0)}<small> XP</small></span>
       {fr.rating != null && <span class="fr-chip dim">iR {fr.rating}</span>}
       {fr.crew && <span class="fr-chip dim">{fr.crew}</span>}
       {fr.key && <span class="fr-key">{fr.key}</span>}
