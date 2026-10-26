@@ -898,7 +898,7 @@ const Flourish = ({ item }: { item: FlourishItem | null }) => {
 interface FreeroamState {
   visible: boolean
   license?: string
-  xp?: number
+  credits?: number
   rank?: string
   crew?: string
   rating?: number
@@ -916,31 +916,30 @@ const FreeroamHud = ({ fr }: { fr: FreeroamState }) => {
   const [delta, setDelta] = useState<{ v: number; id: number } | null>(null)
   const last = useRef<number | null>(null)
   useEffect(() => {
-    if (fr.xp == null) return
-    if (last.current != null && fr.xp !== last.current) {
-      const d = { v: fr.xp - last.current, id: Date.now() }
+    if (fr.credits == null) return
+    if (last.current != null && fr.credits !== last.current) {
+      const d = { v: fr.credits - last.current, id: Date.now() }
       setDelta(d)
       setTimeout(() => setDelta(cur => (cur && cur.id === d.id ? null : cur)), 4000)
     }
-    last.current = fr.xp
-  }, [fr.xp])
+    last.current = fr.credits
+  }, [fr.credits])
   if (!fr.visible) return null
   const art = rankArt(fr.rank)
   return (
     <div class="fr-hud">
       <span class="fr-class">{fr.license || 'D'}</span>
-      {fr.rank && (
+      {art && (
         <span class="fr-rank">
-          {art && <img src={art} alt="" />}
-          <span>{fr.rank}</span>
+          <img src={art} alt="" />
         </span>
       )}
       {delta && (
         <span key={delta.id} class={`fr-delta ${delta.v < 0 ? 'neg' : 'pos'}`}>
-          {delta.v < 0 ? '-' : '+'}{fmtNum(Math.abs(delta.v))} XP
+          {delta.v < 0 ? '-' : '+'}{fmtNum(Math.abs(delta.v))} CR
         </span>
       )}
-      <span class="fr-credits">{fmtNum(fr.xp ?? 0)}<small> XP</small></span>
+      <span class="fr-credits">{fmtNum(fr.credits ?? 0)}<small> CR</small></span>
       {fr.rating != null && <span class="fr-chip dim">iR {fr.rating}</span>}
       {fr.crew && <span class="fr-chip dim">{fr.crew}</span>}
       {fr.key && <span class="fr-key">{fr.key}</span>}

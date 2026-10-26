@@ -539,7 +539,7 @@ CreateThread(function()
         if show then
             local tier = tonumber(st.licenseTier or p.license_tier)
             data.license = st["spz:licenseClass"] or (tier and CLASS[tier]) or "D"
-            data.xp      = tonumber(p.xp) or 0
+            data.credits = tonumber(p.credits) or 0
             data.rank    = st.rank or p.rank
             data.crew    = st.crewTag or p.crew_tag
             data.rating  = tonumber(st.iRating or p.i_rating)
