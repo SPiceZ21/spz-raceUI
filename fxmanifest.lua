@@ -12,6 +12,7 @@ files {
 }
 
 client_scripts {
+    'client/boot.lua',
     'client/main.lua'
 }
 

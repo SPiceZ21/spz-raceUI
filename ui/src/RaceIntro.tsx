@@ -75,22 +75,18 @@ export function IntroCover({ fading }: { fading: boolean }) {
     <div class={`cv-root${fading ? ' is-out' : ''}`}>
       <div class={`cv-stage${sweeping ? ' is-sweeping' : ''}`}>
         {Array.from({ length: SLICES }, (_, i) => {
-          // Outside-in: the edge panels leave first and the ones behind them
-          // follow, so the gaps open between neighbours and widen inward.
-          // Identical motion curves offset in time cannot overtake — see the
-          // original for why matched distances would tear the frame open in
-          // the middle instead.
-          const left = i < SLICES / 2
-          const order = left ? i : SLICES - 1 - i
+          // Horizontal strips, alternating: even rows slide out left, odd rows
+          // right, staggered top to bottom so the frame unzips down the screen.
+          const dir = i % 2 === 0 ? -1 : 1
           return (
             <div
               key={i}
               class="cv-slice"
               style={{
                 '--i': i,
-                '--bgx': `calc(${-i} * (100vw / ${SLICES}))`,
-                '--dir': left ? -1 : 1,
-                '--delay': `${order * 70}ms`,
+                '--bgy': `calc(${-i} * (100vh / ${SLICES}))`,
+                '--dir': dir,
+                '--delay': `${i * 55}ms`,
               }}
             />
           )

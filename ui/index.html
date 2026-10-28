@@ -16,6 +16,15 @@
     </style>
   </head>
   <body style="background: transparent !important;">
+<!-- Hidden until the loading screen is down (client/boot.lua): NUI pages draw
+     on top of the loading screen, so this page showed through it. -->
+<style>body.spz-booting { visibility: hidden !important; }</style>
+<script>
+  document.body.classList.add('spz-booting')
+  window.addEventListener('message', function (e) {
+    if (e.data && e.data.action === 'spzBooted') document.body.classList.remove('spz-booting')
+  })
+</script>
     <div id="root" style="background: transparent !important;"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
