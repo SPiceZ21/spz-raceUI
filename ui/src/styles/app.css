@@ -1738,6 +1738,7 @@ body {
   zoom: 0.86676;
 }
 .lobby-pill.join { border-color: rgba(var(--color-primary-rgb), 0.35); }
+.lobby-pill.warmup { border-color: rgba(var(--color-primary-rgb), 0.8); }
 /* Minigames pill: same shape, quieter — the race is the main call to action. */
 .lobby-pill.mg .lp-key { background: rgba(255, 255, 255, 0.92); }
 .lobby-pill.mg .lp-text { color: rgba(255, 255, 255, 0.85); }

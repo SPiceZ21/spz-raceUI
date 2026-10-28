@@ -862,7 +862,8 @@ const FinishWindow = ({ endsAt, total }: { endsAt: number | null; total: number 
 /* ── Lobby pill (bottom-center: join / queued / next race) ─── */
 
 interface LobbyState {
-  mode: 'hidden' | 'join' | 'queued' | 'intermission'
+  mode: 'hidden' | 'join' | 'queued' | 'intermission' | 'warmup'
+  track?: string      // warmup: the track whose warmup can be joined
   queueCount?: number
   queuePos?: number
   seconds?: number
@@ -958,6 +959,14 @@ const LobbyPill = ({ lb }: { lb: LobbyState }) => {
           <span class="lp-text">JOIN RACE</span>
           {(lb.seconds ?? 0) > 0 && <span class="lp-timer">{lb.seconds}s</span>}
           {(lb.queueCount ?? 0) > 0 && <span class="lp-sub">{lb.queueCount} in queue</span>}
+        </>
+      )}
+      {lb.mode === 'warmup' && (
+        <>
+          <span class="lp-key">E</span>
+          <span class="lp-text">JOIN WARMUP</span>
+          {(lb.seconds ?? 0) > 0 && <span class="lp-timer">{lb.seconds}s</span>}
+          {lb.track && <span class="lp-sub">{lb.track} · race starting</span>}
         </>
       )}
       {lb.mode === 'queued' && (
@@ -1778,6 +1787,7 @@ export function App() {
             queueCount: data.queueCount,
             queuePos: data.queuePos,
             seconds: data.seconds,
+            track: data.track,
             mgKey: data.mgKey,
           })
           break
